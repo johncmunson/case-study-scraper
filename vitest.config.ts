@@ -16,7 +16,7 @@ export default defineConfig({
     unstubEnvs: true,
     unstubGlobals: true,
     coverage: {
-      exclude: ["tests/**"],
+      exclude: ["tests/**", "components/ui/**"],
     },
     projects: [
       {
