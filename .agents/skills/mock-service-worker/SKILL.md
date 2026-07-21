@@ -1,0 +1,135 @@
+---
+name: mock-service-worker
+description: Use when you need to read the Mock Service Worker documentation and understand how to use it.
+---
+
+Mock Service Worker (MSW) is an API mocking library for browser and Node.js. With MSW, you can intercept outgoing requests, observe them, and respond to them using mocked responses.
+
+## Reference
+
+### Docs
+
+- [Introduction](docs/index.mdx): Welcome to the Mock Service Worker documentation!
+- [bypass](docs/api/bypass.mdx): Perform an additional request outside of the interception algorithm.
+- [delay](docs/api/delay.mdx): Control response timing.
+- [finalize](docs/api/finalize.mdx): Schedule cleanup after the request handler completion.
+- [getResponse](docs/api/get-response.mdx): Resolve a request against request handlers programmatically.
+- [graphql](docs/api/graphql.mdx): Intercept GraphQL API requests.
+- [HttpResponse](docs/api/http-response.mdx)
+- [http](docs/api/http.mdx): Intercept HTTP requests.
+- [isCommonAssetRequest](docs/api/is-common-asset-request.mdx): Check if the request is a common asset request.
+- [Life-cycle events](docs/api/life-cycle-events.mdx)
+- [passthrough](docs/api/passthrough.mdx): Handle the intercepted request by performing it as-is.
+- [RequestHandler](docs/api/request-handler.mdx): The base class for request handler implementation.
+- [boundary()](docs/api/setup-server/boundary.mdx): Scope the network interception to the given boundary.
+- [close()](docs/api/setup-server/close.mdx): Stops the request interception in the current Node.js process.
+- [setupServer](docs/api/setup-server/index.mdx): Configure the interception of requests in Node.js.
+- [listHandlers()](docs/api/setup-server/list-handlers.mdx): Return the list of current request handlers.
+- [listen()](docs/api/setup-server/listen.mdx): Enable the interception of requests in the current process.
+- [resetHandlers()](docs/api/setup-server/reset-handlers.mdx): Reset request handlers to the initial list.
+- [restoreHandlers()](docs/api/setup-server/restore-handlers.mdx): Mark used one-time request handlers as unused.
+- [use()](docs/api/setup-server/use.mdx): Prepend request handlers to the current server instance.
+- [setupWorker](docs/api/setup-worker/index.mdx): Configure the interception of requests in a browser.
+- [listHandlers()](docs/api/setup-worker/list-handlers.mdx): Return the list of current request handlers.
+- [resetHandlers()](docs/api/setup-worker/reset-handlers.mdx): Reset request handlers to the initial list.
+- [restoreHandlers()](docs/api/setup-worker/restore-handlers.mdx): Mark used one-time request handlers as unused.
+- [start()](docs/api/setup-worker/start.mdx): Register the Service Worker and starts the request interception.
+- [stop()](docs/api/setup-worker/stop.mdx): Stop the request interception for the current client.
+- [use()](docs/api/setup-worker/use.mdx): Prepend request handlers to the current worker instance.
+- [sse](docs/api/sse.mdx): Intercept Server-Sent Events.
+- [ws](docs/api/ws.mdx): Intercept WebSocket connections.
+- [Avoid request assertions](docs/best-practices/avoid-request-assertions.mdx)
+- [Custom request predicate](docs/best-practices/custom-request-predicate.mdx)
+- [Dynamic mock scenarios](docs/best-practices/dynamic-mock-scenarios.mdx)
+- [Introduction](docs/best-practices/index.mdx)
+- [Managing the worker](docs/best-practices/managing-the-worker.mdx)
+- [Network behavior overrides](docs/best-practices/network-behavior-overrides.mdx)
+- [Structuring handlers](docs/best-practices/structuring-handlers.mdx): Best practices for structuring your request handlers.
+- [Using with TypeScript](docs/best-practices/typescript.mdx)
+- [init](docs/cli/init.mdx): Copy the worker script into the given directory.
+- [Comparison](docs/comparison.mdx): Mock Service Worker comparison with similar tools.
+- [Default behaviors](docs/defaults.mdx): Important default behaviors of Mock Service Worker.
+- [FAQ](docs/faq.mdx): Common questions about Mock Service Worker.
+- [Introduction](docs/graphql/index.mdx): Intercept and mock GraphQL operations.
+- [Intercepting operations](docs/graphql/intercepting-operations/index.mdx)
+- [Mutations](docs/graphql/intercepting-operations/mutations.mdx): Intercepting GraphQL mutations.
+- [Operations](docs/graphql/intercepting-operations/operations.mdx): Intercepting any GraphQL operation.
+- [Queries](docs/graphql/intercepting-operations/queries.mdx): Intercepting GraphQL queries.
+- [Variables](docs/graphql/intercepting-operations/variables.mdx): Reading the GraphQL operation variables.
+- [Errors](docs/graphql/mocking-responses/errors.mdx): Mock GraphQL error responses.
+- [Mocking responses](docs/graphql/mocking-responses/index.mdx): Responding to an intercepted GraphQL operation.
+- [Query batching](docs/graphql/mocking-responses/query-batching.mdx): Intercept and mock batched GraphQL queries.
+- [Schema-first mocking](docs/graphql/schema-first-mocking.mdx)
+- [Handling requests](docs/http/handling-requests.mdx): Different ways to handle an intercepted HTTP request.
+- [Introduction](docs/http/index.mdx): Intercept and mock HTTP requests.
+- [Request body](docs/http/intercepting-requests/body.mdx): Read the intercepted request's body.
+- [Request cookies](docs/http/intercepting-requests/cookies.mdx): Read request cookies.
+- [Intercepting requests](docs/http/intercepting-requests/index.mdx): Learn how to intercept outgoing requests.
+- [Path parameters](docs/http/intercepting-requests/path-parameters.mdx)
+- [Query parameters](docs/http/intercepting-requests/query-parameters.mdx): Read and write request query parameters.
+- [Binary responses](docs/http/mocking-responses/binary.mdx): Responding with binary data.
+- [Cookies](docs/http/mocking-responses/cookies.mdx): Mocking response cookies.
+- [Error responses](docs/http/mocking-responses/error-responses.mdx): Simulating server error responses.
+- [File uploads](docs/http/mocking-responses/file-uploads.mdx): Handle file uploads.
+- [Mocking responses](docs/http/mocking-responses/index.mdx): Declaring and using mocked responses.
+- [Network errors](docs/http/mocking-responses/network-errors.mdx): Simulating request/network errors.
+- [Polling](docs/http/mocking-responses/polling.mdx): Yield different responses on subsequent requests.
+- [Proxying requests](docs/http/mocking-responses/proxying-requests.mdx)
+- [Redirects](docs/http/mocking-responses/redirects.mdx): Mocking redirect responses.
+- [Response patching](docs/http/mocking-responses/response-patching.mdx): Combine original and mocked responses.
+- [Response timing](docs/http/mocking-responses/response-timing.mdx): Control server response time.
+- [Streaming](docs/http/mocking-responses/streaming.mdx): Respond with a stream of mocked data.
+- [Browser integration](docs/integrations/browser.mdx): Set up Mock Service Worker in the browser.
+- [Node.js integration](docs/integrations/node.mdx): Set up Mock Service Worker in Node.js.
+- [React Native integration](docs/integrations/react-native.mdx): Set up Mock Service Worker in React Native.
+- [Limitations](docs/limitations.mdx)
+- [1.x → 2.x](docs/migrations/1.x-to-2.x.mdx): Migration guidelines for version 2.0.
+- [Migrations](docs/migrations.mdx)
+- [Philosophy](docs/philosophy.mdx): Mental models behind Mock Service Worker.
+- [Quick start](docs/quick-start.mdx): Get MSW up and running in under five minutes.
+- [Custom worker script location](docs/recipes/custom-worker-script-location.mdx)
+- [Global response delay](docs/recipes/global-response-delay.mdx): Delay all responses in the application.
+- [Higher-order resolver](docs/recipes/higher-order-resolver.mdx)
+- [Keeping mocks in sync](docs/recipes/keeping-mocks-in-sync.mdx)
+- [Merging Service Workers](docs/recipes/merging-service-workers.mdx): Use MSW with an existing Service Worker.
+- [Using base URL](docs/recipes/using-base-url.mdx)
+- [Using CDN](docs/recipes/using-cdn.mdx)
+- [Using custom "homepage" property](docs/recipes/using-custom-homepage.mdx)
+- [Using local HTTPS](docs/recipes/using-local-https.mdx)
+- [Vitest Browser Mode](docs/recipes/vitest-browser-mode.mdx): Integrate Mock Service Worker with Vitest Browser Mode.
+- [XMLHttpRequest progress events](docs/recipes/xmlhttprequest-progress-events.mdx): Support progress events on XMLHttpRequest.
+- [Debugging runbook](docs/runbook.mdx): Debug common issues with MSW.
+- [Jest missing globals](docs/shared/jest-missing-globals.mdx)
+- [Introduction](docs/sse/index.mdx): Intercept and mock Server-Sent Events (SSE).
+- [Intercepting sources](docs/sse/intercepting-sources/index.mdx): Intercepting and handling event sources.
+- [Closing the connection](docs/sse/server-events/closing-the-connection.mdx): Mocking SSE connection closure.
+- [Custom events](docs/sse/server-events/custom-events.mdx): Mocking custom server events.
+- [Erroring the connection](docs/sse/server-events/erroring-the-connection.mdx): Mocking SSE connection error.
+- [Establishing server connection](docs/sse/server-events/establishing-server-connection.mdx)
+- [Server events](docs/sse/server-events/index.mdx)
+- [Message events](docs/sse/server-events/message-events.mdx): Mocking server message events.
+- [Retry](docs/sse/server-events/retry.mdx): Mocking the reconnection time.
+- [Bindings](docs/websocket/bindings.mdx)
+- [Broadcasting data](docs/websocket/client-events/broadcasting-data.mdx): Sending mocked data to multiple WebSocket clients.
+- [Client-to-server forwarding](docs/websocket/client-events/client-to-server-forwarding.mdx): Manage the client event forwarding.
+- [Closing client connection](docs/websocket/client-events/closing-client-connection.mdx)
+- [Erroring the connection](docs/websocket/client-events/erroring-the-connection.mdx)
+- [Client events](docs/websocket/client-events/index.mdx): Intercepting and handling WebSocket client events
+- [Sending data](docs/websocket/client-events/sending-data.mdx): Sending mocked data to a single WebSocket client.
+- [Event logs](docs/websocket/event-logs.mdx)
+- [Introduction](docs/websocket/index.mdx): Intercept and mock WebSocket events.
+- [Closing server connection](docs/websocket/server-events/closing-server-connection.mdx)
+- [Establishing server connection](docs/websocket/server-events/establishing-server-connection.mdx)
+- [Server events](docs/websocket/server-events/index.mdx)
+- [Sending data](docs/websocket/server-events/sending-data.mdx): Sending mock data to the original WebSocket server.
+- [Server-to-client forwarding](docs/websocket/server-events/server-to-client-forwarding.mdx): Manage the server event forwarding.
+- [Type safety](docs/websocket/type-safety.mdx)
+
+### Blog
+
+- [Enter WebSockets](blog/enter-websockets.mdx): Four years in the making, today we are welcoming a new protocol in the expanding family of MSW—WebSockets.
+- [Introducing MSW 2.0](blog/introducing-msw-2.0.mdx): The biggest library release is finally here! Learn more about the changes, motivation behind them, and how to upgrade to the next version today.
+- [Introducing Server Boundary](blog/introducing-server-boundary.mdx): Read about the new API that enables concurrent test runs with Mock Service Worker.
+- [Introducing Source](blog/introducing-source.mdx): Request handlers is a great way to describe the source of truth for your network. But what if you already have that description elsewhere? Well, that's where Source comes in.
+- [Server-Sent Events Are Here!](blog/server-sent-events-are-here.mdx): First-class support for mocking Server-Sent Events lands in MSW.
+- [Why Use Mock Service Worker?](blog/why-use-mock-service-worker.mdx): When there are so many API mocking tools, why would you ever choose Mock Service Worker?
