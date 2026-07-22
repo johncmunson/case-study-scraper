@@ -13,3 +13,18 @@ Notes for Phase 2:
 - Example URLs with credentials are rejected too, although the plan explicitly called this out only for the target URL; silently dropping credentials during canonicalization was judged unsafe.
 - `RunConfiguration` represents the normalized user-owned configuration. `PersistedRunConfiguration` adds the server-owned immutable `filteringModel`; creation-time config validation/attachment remains for the persistence/API phases.
 - The current POST route is still the pre-existing logging stub, but it now logs normalized schema output (including Field Keys). Removal of payload logging remains scheduled for Phase 9.
+
+# Phase 2 handoff
+
+Implemented the authoritative Drizzle/PostgreSQL persistence model and generated `db/migrations/0001_tiresome_outlaw_kid.sql`.
+
+- Added separate run, job, stage-status, stage-name, and failure-code PostgreSQL enums plus all four scrape-run tables, inferred record types, schema exports, and Drizzle relations.
+- Added the one-active-run-per-user partial unique index, owner/configuration indexes, per-run field/stage/job uniqueness, unique Workflow run IDs, primary-implies-required, cascade deletes, lifecycle defaults, nonnegative counters, and successful-result consistency checks.
+- Added integration coverage for enum/type exports, defaults, constraints, active-run behavior, successful-result storage, and user-to-result cascade deletion. The migration is reapplied from scratch by the integration global setup.
+- `pnpm test` passes 73 tests; `pnpm typecheck`, `pnpm lint`, and Prettier checks pass.
+
+Notes for Phase 3:
+
+- Drizzle wraps PostgreSQL constraint errors in `DrizzleQueryError`; the PostgreSQL code and constraint name are on `error.cause` (for example, `23505` / `scrape_runs_one_active_per_user_idx`). Conflict translation should inspect the cause rather than the top-level error.
+- The database enforces at most one primary field, while transactional creation must still enforce exactly one primary field and exactly three stages as planned.
+- The JSONB check guarantees complete jobs have an object and non-complete jobs have no result. Field membership and string-or-null value validation remain application/provider responsibilities for later phases.
