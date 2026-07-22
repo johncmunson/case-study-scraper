@@ -60,3 +60,19 @@ Notes for Phase 5:
 - `createScrapeJobsAndStartScraping` requires at least two distinct Canonical Page URLs on first application. It preserves the initially persisted job set on replay and will not append a different replay payload after Scraping has started.
 - Lifecycle failure methods accept classified application failures and replace caller-provided text with a centralized, code-specific public message before persistence. Provider adapters should still classify raw errors without passing provider payloads or internal exception details.
 - A Cancellation Request transitions a still-pending run to `in_progress` without starting Mapping, then holds the active-run uniqueness constraint until terminal cleanup.
+
+# Phase 5 handoff
+
+Implemented the provider-bound Run Preparation adapters and deterministic URL selection.
+
+- Firecrawl Map now uses the agreed options, disables the SDK's hidden retry loop, canonicalizes and deduplicates links in provider order, and discards malformed, subdomain, and unrelated-host entries without retaining the Site URL Set.
+- URL Filtering now makes one AI SDK structured-output call with the complete Site URL Set and all Example Pages, uses the supplied persisted model identifier, disables AI SDK retries, intersects model output with candidates, and orders selected Matching Page URLs by Site URL Set order before appending missing examples in user order.
+- Added shared provider failure classification to sanitized Workflow `RetryableError`/`FatalError` values, including malformed output, transient status codes, network failures, and AI `Retry-After` metadata.
+- Expanded AI Gateway preflight validation to require and return a trimmed `URL_FILTER_MODEL`; missing Gateway authentication and model configuration are represented as `503` deployment-configuration failures.
+- Added mocked Firecrawl and AI model tests plus pure post-processing, configuration, privacy-boundary, and retry-classification coverage.
+
+Notes for Phase 6/7:
+
+- The installed Firecrawl SDK treats `maxRetries` as total attempts in its implementation, despite its option wording; the Map adapter deliberately sets it to `1` so Workflow owns retries. AI SDK uses `maxRetries: 0` to achieve the same result.
+- These adapters are ordinary server-only functions, not standalone Workflow steps. Phase 7 should call them from step functions that admit/persist each attempt before the external call, so credentials and attempt bookkeeping stay inside the step boundary.
+- Firecrawl's Map error type does not expose response headers, so `Retry-After` can only be honored when a provider error exposes it; AI SDK `APICallError` headers are handled.

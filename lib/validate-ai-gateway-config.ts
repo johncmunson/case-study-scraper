@@ -1,5 +1,5 @@
 export class AiGatewayConfigurationError extends Error {
-  readonly status = 401
+  readonly status = 503
 
   constructor() {
     super(
@@ -9,7 +9,30 @@ export class AiGatewayConfigurationError extends Error {
   }
 }
 
-export function validateAiGatewayConfig(environment: NodeJS.ProcessEnv) {
+export class UrlFilterModelConfigurationError extends Error {
+  readonly status = 503
+
+  constructor() {
+    super("URL_FILTER_MODEL must be configured for URL filtering.")
+    this.name = "UrlFilterModelConfigurationError"
+  }
+}
+
+type AiGatewayEnvironment = Readonly<
+  Partial<
+    Record<
+      "AI_GATEWAY_API_KEY" | "VERCEL_OIDC_TOKEN" | "URL_FILTER_MODEL",
+      string | undefined
+    >
+  >
+>
+
+export function validateAiGatewayConfig(
+  environment: Pick<
+    AiGatewayEnvironment,
+    "AI_GATEWAY_API_KEY" | "VERCEL_OIDC_TOKEN"
+  >,
+) {
   if (
     environment.AI_GATEWAY_API_KEY?.trim() ||
     environment.VERCEL_OIDC_TOKEN?.trim()
@@ -17,4 +40,18 @@ export function validateAiGatewayConfig(environment: NodeJS.ProcessEnv) {
     return
   }
   throw new AiGatewayConfigurationError()
+}
+
+export function validateUrlFilterConfiguration(
+  environment: AiGatewayEnvironment,
+) {
+  validateAiGatewayConfig(environment)
+
+  const filteringModel = environment.URL_FILTER_MODEL?.trim()
+
+  if (!filteringModel) {
+    throw new UrlFilterModelConfigurationError()
+  }
+
+  return filteringModel
 }
