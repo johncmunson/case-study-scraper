@@ -66,6 +66,10 @@ describe("POST /api/scrape-runs", () => {
 
     expect(response.status).toBe(201)
     await expect(response.json()).resolves.toEqual({ success: true })
-    expect(log).toHaveBeenCalledWith("New scrape run payload:", validPayload)
+    expect(log).toHaveBeenCalledWith("New scrape run payload:", {
+      ...validPayload,
+      url: "https://example.com/",
+      fields: [{ ...validPayload.fields[0], key: "company" }],
+    })
   })
 })

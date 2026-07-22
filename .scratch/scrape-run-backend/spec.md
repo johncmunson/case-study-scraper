@@ -62,6 +62,27 @@ All Workflow steps that mutate PostgreSQL must be idempotent and use conditional
 
 See `docs/adr/0001-postgres-authority-workflow-orchestration.md`.
 
+### 4.1 Module organization guidance
+
+Prefer grouping scrape-run code by domain and responsibility rather than scattering it across generic `types`, `schemas`, or `utils` modules. As a general direction:
+
+- Keep shared contracts and normalization helpers independent of providers and persistence.
+- Keep server-only repositories, lifecycle operations, and provider adapters distinct from the shared domain surface.
+- Keep database schema and migrations, Workflow orchestration and steps, and HTTP route handlers in locations consistent with their framework and repository conventions.
+- Avoid both large catch-all modules and premature directory nesting; split responsibilities when doing so makes boundaries or ownership clearer.
+
+An illustrative starting point could be:
+
+```text
+lib/scrape-runs/                 # Shared domain contracts and normalization
+lib/server/scrape-runs/          # Server-only repositories and provider adapters
+db/schema/                       # Drizzle schema definitions
+workflows/scrape-runs/           # Workflow orchestration and step functions
+app/api/scrape-runs/             # HTTP route handlers
+```
+
+This example is intentionally non-normative and need not be created upfront. These are high-level suggestions, not a rigid directory specification. Implementation experience, framework constraints, or more ergonomic boundaries discovered in later phases may justify a different organization. Prefer clear dependencies and responsibility boundaries over strict adherence to any initial folder layout.
+
 ## 5. Input contract and normalization
 
 The existing create payload remains conceptually:
