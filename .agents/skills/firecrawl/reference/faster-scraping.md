@@ -1,7 +1,3 @@
-> ## Documentation Index
-> Fetch the complete documentation index at: https://docs.firecrawl.dev/llms.txt
-> Use this file to discover all available pages before exploring further.
-
 # Faster Scraping
 
 > Speed up your scrapes by 500% with the maxAge parameter

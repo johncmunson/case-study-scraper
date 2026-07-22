@@ -1,7 +1,3 @@
-> ## Documentation Index
-> Fetch the complete documentation index at: https://docs.firecrawl.dev/llms.txt
-> Use this file to discover all available pages before exploring further.
-
 # Scrape
 
 > Turn any url into clean data
