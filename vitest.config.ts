@@ -7,6 +7,9 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": rootDirectory,
+      "server-only": fileURLToPath(
+        new URL("./tests/mocks/server-only.ts", import.meta.url),
+      ),
     },
   },
   test: {

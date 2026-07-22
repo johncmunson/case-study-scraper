@@ -28,3 +28,18 @@ Notes for Phase 3:
 - Drizzle wraps PostgreSQL constraint errors in `DrizzleQueryError`; the PostgreSQL code and constraint name are on `error.cause` (for example, `23505` / `scrape_runs_one_active_per_user_idx`). Conflict translation should inspect the cause rather than the top-level error.
 - The database enforces at most one primary field, while transactional creation must still enforce exactly one primary field and exactly three stages as planned.
 - The JSONB check guarantees complete jobs have an object and non-complete jobs have no result. Field membership and string-or-null value validation remain application/provider responsibilities for later phases.
+
+# Phase 3 handoff
+
+Implemented the server-only scrape-run repository and its database integration coverage.
+
+- Run creation now writes the run, ordered fields, and all three pending stages in one transaction, checks for exactly one required Primary Identifier, and translates the active-run partial-index violation into `ActiveScrapeRunConflictError`.
+- Added an owner-scoped read that returns the persisted run with ordered fields and canonical stage ordering; cross-owner reads return `null`.
+- Added idempotent Workflow run-ID attachment and an atomic claim that only transitions a pending, non-cancelling run for the matching/unattached Workflow ID, starts Mapping with the same timestamp, and returns the complete persisted configuration. Competing and repeated claims exit with `null`.
+- Integration tests cover successful creation, rollback, concurrent active-run creation, owner isolation, attachment idempotency, and competing/mismatched/repeated claims.
+
+Notes for Phase 4:
+
+- `claimScrapeRun` already owns the `pending → in_progress` run transition and `mapping: pending → in_progress` transition; Phase 4 lifecycle operations should build from that boundary rather than start Mapping a second time.
+- Workflow attachment returns `true` for a new or already-identical attachment and `false` for a missing run or conflicting ID. Claim returns the claimed record or `null` when it cannot claim.
+- The repository imports `server-only`; the direct dependency and a Vitest-only no-op alias were added because the marker intentionally throws outside a React Server environment. No database migration was needed in this phase.
