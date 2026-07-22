@@ -43,3 +43,20 @@ Notes for Phase 4:
 - `claimScrapeRun` already owns the `pending → in_progress` run transition and `mapping: pending → in_progress` transition; Phase 4 lifecycle operations should build from that boundary rather than start Mapping a second time.
 - Workflow attachment returns `true` for a new or already-identical attachment and `false` for a missing run or conflicting ID. Claim returns the claimed record or `null` when it cannot claim.
 - The repository imports `server-only`; the direct dependency and a Vitest-only no-op alias were added because the marker intentionally throws outside a React Server environment. No database migration was needed in this phase.
+
+# Phase 4 handoff
+
+Implemented the conditional lifecycle repository and PostgreSQL integration coverage.
+
+- Added transactional stage attempt/admission, Mapping-to-Filtering advancement, preparation failure/skipping, dispatch-failure compensation, idempotent job creation with atomic Scraping start, job attempt/completion/failure transitions, aggregate counts, and persisted-state finalization.
+- Added two-phase owner-scoped cancellation primitives. Every mutating operation locks the parent run first, so cancellation, job responses, and finalization serialize consistently; terminal jobs and successful Extraction Results survive cleanup.
+- Added unexpected Workflow failure cleanup that fails the active stage/run, skips future stages, fails only unfinished jobs after Scraping starts, and lets an existing Cancellation Request take precedence.
+- Split the implementation behind `lifecycle-repository.ts` into stage, job, and cancellation modules to keep the public seam centralized without creating a large catch-all file. No schema migration was needed.
+- Integration coverage exercises dispatch compensation, valid/invalid and replayed stage transitions, idempotent job creation, attempt counters, terminal-state protection, mixed/all-failed finalization, owner isolation, repeated cancellation, cancellation/finalization races, partial-success preservation, and unexpected-failure cleanup.
+
+Notes for Phase 5:
+
+- Attempt counts represent attempts admitted immediately before an external provider call. A crash after admission but before the request can overcount, but a completed request cannot be undercounted.
+- `createScrapeJobsAndStartScraping` requires at least two distinct Canonical Page URLs on first application. It preserves the initially persisted job set on replay and will not append a different replay payload after Scraping has started.
+- Lifecycle failure methods accept classified application failures and replace caller-provided text with a centralized, code-specific public message before persistence. Provider adapters should still classify raw errors without passing provider payloads or internal exception details.
+- A Cancellation Request transitions a still-pending run to `in_progress` without starting Mapping, then holds the active-run uniqueness constraint until terminal cleanup.

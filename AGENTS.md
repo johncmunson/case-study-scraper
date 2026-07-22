@@ -9,3 +9,4 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Whenever creating frontend components, layouts, or pages, always seek to leverage existing shadcn/ui components (`components/ui`) as opposed to creating UI from scratch
 - If you need to use python for any reason, the command is `python3`
 - Just because a reviewer subagent makes a recommendation does not mean you need to act upon it if it would result in scope creep, premature optimization, or over-engineering
+- Never run prettier. Leave this task to the user.
