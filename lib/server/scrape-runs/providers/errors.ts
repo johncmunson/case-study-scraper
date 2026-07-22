@@ -4,7 +4,7 @@ import { APICallError, NoObjectGeneratedError } from "ai"
 import { SdkError } from "firecrawl"
 import { FatalError, RetryableError } from "workflow"
 
-export type PreparationProvider = "mapping" | "filtering"
+import type { ScrapeRunStage } from "@/lib/scrape-runs/contracts"
 
 const RETRYABLE_STATUS_CODES = new Set([408, 429, 500, 502, 503, 504])
 const NETWORK_ERROR_CODES = new Set([
@@ -28,8 +28,12 @@ export class MalformedProviderOutputError extends Error {
   }
 }
 
-function providerLabel(provider: PreparationProvider) {
-  return provider === "mapping" ? "Mapping" : "Filtering"
+function providerLabel(provider: ScrapeRunStage) {
+  if (provider === "mapping") {
+    return "Mapping"
+  }
+
+  return provider === "filtering" ? "Filtering" : "Scraping"
 }
 
 function findApiCallError(error: unknown): APICallError | undefined {
@@ -119,7 +123,7 @@ function hasNetworkFailure(error: unknown) {
 }
 
 export function toProviderWorkflowError(
-  provider: PreparationProvider,
+  provider: ScrapeRunStage,
   error: unknown,
 ): RetryableError | FatalError {
   if (RetryableError.is(error) || FatalError.is(error)) {

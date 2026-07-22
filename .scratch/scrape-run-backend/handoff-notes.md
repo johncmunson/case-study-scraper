@@ -76,3 +76,18 @@ Notes for Phase 6/7:
 - The installed Firecrawl SDK treats `maxRetries` as total attempts in its implementation, despite its option wording; the Map adapter deliberately sets it to `1` so Workflow owns retries. AI SDK uses `maxRetries: 0` to achieve the same result.
 - These adapters are ordinary server-only functions, not standalone Workflow steps. Phase 7 should call them from step functions that admit/persist each attempt before the external call, so credentials and attempt bookkeeping stay inside the step boundary.
 - Firecrawl's Map error type does not expose response headers, so `Retry-After` can only be honored when a provider error exposes it; AI SDK `APICallError` headers are handled.
+
+# Phase 6 handoff
+
+Implemented the single-page Firecrawl Scrape extraction boundary and its application result contract.
+
+- Added the dynamic JSON Schema builder with nullable string properties, the exact null instruction, `additionalProperties: false`, and no JSON Schema `required` keyword. Application-required and Primary Identifier invariants are validated separately.
+- Added the JSON-mode Scrape adapter with Firecrawl's default cache behavior and SDK retries disabled so Workflow remains the retry authority.
+- Added strict output normalization for omitted/null/blank values, unknown and wrong-typed property rejection, and ordered missing-required Field Key diagnostics. Missing-required failures expose repository-ready failure data without exposing or retaining the partial normalized result.
+- Extended shared provider error classification to Scraping and added mocked adapter coverage for schema/request shape, normalization, malformed output, fatal required-field outcomes, provider failures, and privacy boundaries.
+
+Notes for Phase 7/8:
+
+- `scrapePageForExtraction` returns an `ExtractionResult` on success, throws `RetryableError` for malformed/transient responses, and throws `MissingRequiredFieldsError` (a `FatalError`) with `failure` and `missingRequiredFieldKeys` for valid responses missing application-required values.
+- Catch `MissingRequiredFieldsError` inside the eventual job step before crossing a Workflow serialization boundary, then pass its diagnostic fields to `failScrapeJob`. Other terminal provider failures should be persisted as `scrape_failed` by the orchestration layer.
+- As with Mapping, Firecrawl is constructed with `maxRetries: 1`; in this installed SDK that means one total request. No `maxAge` is sent.
