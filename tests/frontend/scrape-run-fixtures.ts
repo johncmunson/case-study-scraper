@@ -1,4 +1,7 @@
-import type { ScrapeRunSummary } from "@/lib/scrape-runs/api-contracts"
+import type {
+  ScrapeRunDetail,
+  ScrapeRunSummary,
+} from "@/lib/scrape-runs/api-contracts"
 
 export const validScrapeRunSummary = {
   id: 17,
@@ -18,3 +21,93 @@ export const validScrapeRunSummary = {
   startedAt: "2026-04-01T10:01:00.000Z",
   finishedAt: null,
 } satisfies ScrapeRunSummary
+
+export const validScrapeRunDetail = {
+  ...validScrapeRunSummary,
+  failureCode: null,
+  failureMessage: null,
+  exampleUrls: [
+    "https://www.example.com/customers/acme",
+    "https://www.example.com/customers/globex",
+  ],
+  filteringModel: "anthropic/claude-sonnet-4.5",
+  fields: [
+    {
+      position: 0,
+      label: "Client Name",
+      key: "client_name",
+      description: "The customer name",
+      required: true,
+      primaryIdentifier: true,
+    },
+    {
+      position: 1,
+      label: "Industry",
+      key: "industry",
+      description: "The customer industry",
+      required: false,
+      primaryIdentifier: false,
+    },
+  ],
+  stages: [
+    {
+      stage: "mapping",
+      status: "complete",
+      attemptCount: 1,
+      failureCode: null,
+      failureMessage: null,
+      createdAt: "2026-04-01T10:00:00.000Z",
+      updatedAt: "2026-04-01T10:01:00.000Z",
+      startedAt: "2026-04-01T10:00:10.000Z",
+      finishedAt: "2026-04-01T10:01:00.000Z",
+    },
+    {
+      stage: "filtering",
+      status: "complete",
+      attemptCount: 1,
+      failureCode: null,
+      failureMessage: null,
+      createdAt: "2026-04-01T10:00:00.000Z",
+      updatedAt: "2026-04-01T10:02:00.000Z",
+      startedAt: "2026-04-01T10:01:00.000Z",
+      finishedAt: "2026-04-01T10:02:00.000Z",
+    },
+    {
+      stage: "scraping",
+      status: "in_progress",
+      attemptCount: 1,
+      failureCode: null,
+      failureMessage: null,
+      createdAt: "2026-04-01T10:00:00.000Z",
+      updatedAt: "2026-04-01T10:03:00.000Z",
+      startedAt: "2026-04-01T10:02:00.000Z",
+      finishedAt: null,
+    },
+  ],
+  jobs: [
+    {
+      id: 31,
+      url: "https://www.example.com/customers/acme",
+      status: "complete",
+      primaryIdentifier: "Acme",
+      failureCode: null,
+      attemptCount: 1,
+      createdAt: "2026-04-01T10:02:00.000Z",
+      updatedAt: "2026-04-01T10:03:00.000Z",
+      startedAt: "2026-04-01T10:02:10.000Z",
+      finishedAt: "2026-04-01T10:03:00.000Z",
+    },
+    {
+      id: 32,
+      url: "https://www.example.com/customers/globex",
+      status: "failed",
+      primaryIdentifier: null,
+      failureCode: "scrape_failed",
+      attemptCount: 2,
+      createdAt: "2026-04-01T10:02:00.000Z",
+      updatedAt: "2026-04-01T10:04:00.000Z",
+      startedAt: "2026-04-01T10:02:10.000Z",
+      finishedAt: "2026-04-01T10:04:00.000Z",
+    },
+  ],
+} satisfies ScrapeRunDetail

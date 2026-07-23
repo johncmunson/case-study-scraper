@@ -41,6 +41,8 @@ const runSummary = {
 
 const runDetail = {
   ...runSummary,
+  failureCode: "unexpected_workflow_failure" as const,
+  failureMessage: "The scrape run stopped unexpectedly.",
   exampleUrls: [
     "https://example.com/customers/acme",
     "https://example.com/customers/globex",
@@ -208,6 +210,8 @@ describe("scrape-run read routes", () => {
     expect(body).toMatchObject({
       id: 17,
       cancellationRequestedAt: "2026-04-01T10:05:00.000Z",
+      failureCode: "unexpected_workflow_failure",
+      failureMessage: "The scrape run stopped unexpectedly.",
       jobCounts: runSummary.jobCounts,
       fields: runDetail.fields,
       jobs: [
@@ -215,8 +219,28 @@ describe("scrape-run read routes", () => {
         { id: 32, primaryIdentifier: null, failureCode: "scrape_failed" },
       ],
     })
+    expect(body).not.toHaveProperty("workflowRunId")
+    expect(body).not.toHaveProperty("providerConfiguration")
     expect(body.jobs[0]).not.toHaveProperty("result")
     expect(body.jobs[1]).not.toHaveProperty("failureMessage")
+  })
+
+  it("includes null Run-level failure fields for an ordinary Run", async () => {
+    vi.mocked(findOwnedScrapeRunDetail).mockResolvedValue({
+      ...runDetail,
+      failureCode: null,
+      failureMessage: null,
+    })
+
+    const response = await getScrapeRun(
+      new Request("http://localhost/api/scrape-runs/17"),
+      runContext(),
+    )
+
+    await expect(response.json()).resolves.toMatchObject({
+      failureCode: null,
+      failureMessage: null,
+    })
   })
 
   it.each(["not-a-run", "0", "-1", "9007199254740992"])(

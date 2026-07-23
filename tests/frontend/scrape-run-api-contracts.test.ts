@@ -2,14 +2,24 @@ import { http, HttpResponse } from "msw"
 import { describe, expect, it } from "vitest"
 
 import {
+  cancelScrapeRun,
+  cancelScrapeRunResponseSchema,
   createScrapeRun,
+  fetchScrapeRunDetail,
   fetchScrapeRunSummaries,
+  getScrapeJobDetailPath,
+  getScrapeRunCancellationApiPath,
+  getScrapeRunDetailApiPath,
+  scrapeRunDetailSchema,
   scrapeRunSummaryListSchema,
   scrapeRunSummarySchema,
   ScrapeRunApiError,
 } from "@/lib/scrape-runs/api-contracts"
 import type { NewScrapeRunInput } from "@/lib/scrape-runs/new-scrape-run"
-import { validScrapeRunSummary } from "@/tests/frontend/scrape-run-fixtures"
+import {
+  validScrapeRunDetail,
+  validScrapeRunSummary,
+} from "@/tests/frontend/scrape-run-fixtures"
 import { server } from "@/tests/mocks/server"
 
 const apiUrl = "http://localhost/api/scrape-runs"
@@ -75,6 +85,177 @@ describe("Scrape Run frontend contracts", () => {
         ...replacement,
       }).success,
     ).toBe(false)
+  })
+})
+
+describe("Scrape Run detail frontend contract", () => {
+  it("accepts one complete strict Run detail response", () => {
+    expect(scrapeRunDetailSchema.parse(validScrapeRunDetail)).toEqual(
+      validScrapeRunDetail,
+    )
+    expect(
+      scrapeRunDetailSchema.safeParse({
+        ...validScrapeRunDetail,
+        workflowRunId: "wfr_secret",
+      }).success,
+    ).toBe(false)
+  })
+
+  it.each([
+    ["Run ID", { id: 0 }],
+    ["Run failure code", { failureCode: "provider_exploded" }],
+    ["Run failure timestamp", { finishedAt: "yesterday" }],
+    ["Target Site", { targetUrl: "https://www.example.com/path" }],
+    ["Example Page URL", { exampleUrls: ["ftp://example.com/one"] }],
+    ["filtering model", { filteringModel: "" }],
+    ["job ID", { jobs: [{ ...validScrapeRunDetail.jobs[0], id: -1 }] }],
+    ["job status", { jobs: [{ ...validScrapeRunDetail.jobs[0], status: "paused" }] }],
+    ["job URL", { jobs: [{ ...validScrapeRunDetail.jobs[0], url: "mailto:a@example.com" }] }],
+    ["job failure code", { jobs: [{ ...validScrapeRunDetail.jobs[0], failureCode: "unknown" }] }],
+    ["job attempts", { jobs: [{ ...validScrapeRunDetail.jobs[0], attemptCount: -1 }] }],
+    ["job timestamp", { jobs: [{ ...validScrapeRunDetail.jobs[0], updatedAt: null }] }],
+    ["field position", { fields: [{ ...validScrapeRunDetail.fields[0], position: -1 }] }],
+    ["field label", { fields: [{ ...validScrapeRunDetail.fields[0], label: "" }] }],
+    ["field key", { fields: [{ ...validScrapeRunDetail.fields[0], key: "" }] }],
+    ["field description", { fields: [{ ...validScrapeRunDetail.fields[0], description: "" }] }],
+    ["stage status", { stages: validScrapeRunDetail.stages.map((stage, index) => index === 0 ? { ...stage, status: "paused" } : stage) }],
+    ["stage attempts", { stages: validScrapeRunDetail.stages.map((stage, index) => index === 0 ? { ...stage, attemptCount: 1.5 } : stage) }],
+    ["stage failure code", { stages: validScrapeRunDetail.stages.map((stage, index) => index === 0 ? { ...stage, failureCode: "unknown" } : stage) }],
+    ["stage timestamp", { stages: validScrapeRunDetail.stages.map((stage, index) => index === 0 ? { ...stage, createdAt: null } : stage) }],
+  ])("rejects an invalid %s", (_label, replacement) => {
+    expect(
+      scrapeRunDetailSchema.safeParse({
+        ...validScrapeRunDetail,
+        ...replacement,
+      }).success,
+    ).toBe(false)
+  })
+
+  it.each([
+    ["missing", validScrapeRunDetail.stages.slice(0, 2)],
+    ["unknown", validScrapeRunDetail.stages.map((stage, index) => index === 0 ? { ...stage, stage: "discovery" } : stage)],
+    ["duplicate", [validScrapeRunDetail.stages[0], validScrapeRunDetail.stages[0], validScrapeRunDetail.stages[2]]],
+    ["misordered", [validScrapeRunDetail.stages[1], validScrapeRunDetail.stages[0], validScrapeRunDetail.stages[2]]],
+  ])("rejects %s Run Stages", (_label, stages) => {
+    expect(
+      scrapeRunDetailSchema.safeParse({ ...validScrapeRunDetail, stages })
+        .success,
+    ).toBe(false)
+  })
+
+  it.each([
+    ["no fields", []],
+    [
+      "no Primary Identifier",
+      validScrapeRunDetail.fields.map((field) => ({
+        ...field,
+        primaryIdentifier: false,
+      })),
+    ],
+    [
+      "multiple Primary Identifiers",
+      validScrapeRunDetail.fields.map((field) => ({
+        ...field,
+        required: true,
+        primaryIdentifier: true,
+      })),
+    ],
+    [
+      "optional Primary Identifier",
+      validScrapeRunDetail.fields.map((field, index) =>
+        index === 0 ? { ...field, required: false } : field,
+      ),
+    ],
+  ])("rejects extraction fields with %s", (_label, fields) => {
+    expect(
+      scrapeRunDetailSchema.safeParse({ ...validScrapeRunDetail, fields })
+        .success,
+    ).toBe(false)
+  })
+
+  it("rejects job counts that do not sum to total", () => {
+    expect(
+      scrapeRunDetailSchema.safeParse({
+        ...validScrapeRunDetail,
+        jobCounts: { ...validScrapeRunDetail.jobCounts, total: 6 },
+      }).success,
+    ).toBe(false)
+  })
+
+  it("accepts every known lifecycle value and rejects unknown values", () => {
+    for (const status of [
+      "pending",
+      "in_progress",
+      "complete",
+      "failed",
+      "cancelled",
+    ] as const) {
+      expect(
+        scrapeRunDetailSchema.safeParse({
+          ...validScrapeRunDetail,
+          status,
+        }).success,
+      ).toBe(true)
+    }
+
+    expect(
+      scrapeRunDetailSchema.safeParse({
+        ...validScrapeRunDetail,
+        status: "paused",
+      }).success,
+    ).toBe(false)
+  })
+
+  it("accepts every Stage status including Skipped", () => {
+    for (const status of [
+      "pending",
+      "in_progress",
+      "complete",
+      "failed",
+      "cancelled",
+      "skipped",
+    ] as const) {
+      const stages = validScrapeRunDetail.stages.map((stage, index) =>
+        index === 0 ? { ...stage, status } : stage,
+      )
+      expect(
+        scrapeRunDetailSchema.safeParse({ ...validScrapeRunDetail, stages })
+          .success,
+      ).toBe(true)
+    }
+  })
+
+  it("accepts valid nullable values exactly where declared", () => {
+    expect(
+      scrapeRunDetailSchema.safeParse({
+        ...validScrapeRunDetail,
+        failureCode: "unexpected_workflow_failure",
+        failureMessage: "The run stopped unexpectedly.",
+        startedAt: null,
+        finishedAt: null,
+        jobs: [
+          {
+            ...validScrapeRunDetail.jobs[0],
+            primaryIdentifier: null,
+            failureCode: null,
+            startedAt: null,
+            finishedAt: null,
+          },
+        ],
+      }).success,
+    ).toBe(true)
+  })
+})
+
+describe("Scrape Run API paths", () => {
+  it("builds detail, cancellation, and future job-detail paths", () => {
+    expect(getScrapeRunDetailApiPath(17)).toBe("/api/scrape-runs/17")
+    expect(getScrapeRunCancellationApiPath(17)).toBe(
+      "/api/scrape-runs/17/cancel",
+    )
+    expect(getScrapeJobDetailPath(17, 31)).toBe(
+      "/app/scrape-runs/17/scrape-jobs/31",
+    )
   })
 })
 
@@ -151,6 +332,85 @@ describe("Scrape Run frontend fetchers", () => {
       message: `Request failed with status ${response.status}.`,
       status: response.status,
       scrapeRunId: undefined,
+    })
+  })
+
+  it("validates detail GET data before returning it", async () => {
+    const detailUrl = `${apiUrl}/17`
+    server.use(
+      http.get(detailUrl, () => HttpResponse.json(validScrapeRunDetail)),
+    )
+
+    await expect(fetchScrapeRunDetail(detailUrl)).resolves.toEqual(
+      validScrapeRunDetail,
+    )
+  })
+
+  it("rejects malformed detail JSON before returning it to a cache", async () => {
+    const detailUrl = `${apiUrl}/17`
+    server.use(
+      http.get(detailUrl, () =>
+        HttpResponse.json({
+          ...validScrapeRunDetail,
+          stages: validScrapeRunDetail.stages.slice(0, 2),
+        }),
+      ),
+    )
+
+    await expect(fetchScrapeRunDetail(detailUrl)).rejects.toMatchObject({
+      message: "The server returned an invalid response.",
+      status: 200,
+    })
+  })
+
+  it("posts cancellation and validates the exact 202 response", async () => {
+    const cancelUrl = `${apiUrl}/17/cancel`
+    server.use(
+      http.post(cancelUrl, () =>
+        HttpResponse.json({ id: 17, status: "cancelled" }, { status: 202 }),
+      ),
+    )
+
+    await expect(cancelScrapeRun(cancelUrl)).resolves.toEqual({
+      id: 17,
+      status: "cancelled",
+    })
+    expect(
+      cancelScrapeRunResponseSchema.safeParse({
+        id: 17,
+        status: "cancelled",
+        finishedAt: "2026-04-01T10:05:00.000Z",
+      }).success,
+    ).toBe(false)
+  })
+
+  it.each([
+    [{ id: 0, status: "cancelled" }, "non-positive ID"],
+    [{ id: 17, status: "complete" }, "non-cancelled status"],
+    [{ id: 17 }, "missing status"],
+  ])("rejects a malformed cancellation response with %s", async (body, _label) => {
+    const cancelUrl = `${apiUrl}/17/cancel`
+    server.use(
+      http.post(cancelUrl, () => HttpResponse.json(body, { status: 202 })),
+    )
+
+    await expect(cancelScrapeRun(cancelUrl)).rejects.toMatchObject({
+      message: "The server returned an invalid response.",
+      status: 202,
+    })
+  })
+
+  it("rejects a successful cancellation response with the wrong status code", async () => {
+    const cancelUrl = `${apiUrl}/17/cancel`
+    server.use(
+      http.post(cancelUrl, () =>
+        HttpResponse.json({ id: 17, status: "cancelled" }),
+      ),
+    )
+
+    await expect(cancelScrapeRun(cancelUrl)).rejects.toMatchObject({
+      message: "The server returned an invalid response.",
+      status: 200,
     })
   })
 

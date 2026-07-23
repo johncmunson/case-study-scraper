@@ -1,19 +1,31 @@
 import { describe, expect, it } from "vitest"
 
 import {
+  clampScrapeJobPage,
+  filterScrapeJobsByStatus,
   formatScrapeRunCreatedAt,
+  formatScrapeRunTimestamp,
   getFinishedJobCount,
   getJobProgressPercentage,
+  getPrimaryIdentifierField,
+  getScrapeJobStatusCounts,
+  getScrapeJobStatusLabel,
   getScrapeRunJobSummary,
+  getScrapeRunStageLabel,
+  getScrapeRunStageStatusLabel,
   getScrapeRunStatusLabel,
   getTargetSiteHostname,
+  getVisibleScrapeJobRange,
   isActiveScrapeRun,
   isCancellingScrapeRun,
+  paginateScrapeJobs,
+  SCRAPE_JOB_PAGE_SIZE,
 } from "@/lib/scrape-runs/presentation"
 import type {
   ScrapeRunJobCounts,
   ScrapeRunSummary,
 } from "@/lib/scrape-runs/api-contracts"
+import { validScrapeRunDetail } from "@/tests/frontend/scrape-run-fixtures"
 
 const zeroCounts: ScrapeRunJobCounts = {
   total: 0,
@@ -180,6 +192,119 @@ describe("Scrape Job progress presentation", () => {
   })
 })
 
+describe("Run Stage presentation", () => {
+  it.each([
+    ["mapping", "Mapping"],
+    ["filtering", "Filtering"],
+    ["scraping", "Scraping"],
+  ] as const)("labels the %s stage", (stage, expected) => {
+    expect(getScrapeRunStageLabel(stage)).toBe(expected)
+  })
+
+  it.each([
+    ["pending", "Pending"],
+    ["in_progress", "In progress"],
+    ["complete", "Complete"],
+    ["failed", "Failed"],
+    ["cancelled", "Cancelled"],
+    ["skipped", "Skipped"],
+  ] as const)("labels the %s stage status", (status, expected) => {
+    expect(getScrapeRunStageStatusLabel(status)).toBe(expected)
+  })
+
+  it.each([
+    ["pending", "Pending"],
+    ["in_progress", "In progress"],
+    ["complete", "Complete"],
+    ["failed", "Failed"],
+    ["cancelled", "Cancelled"],
+  ] as const)("labels the %s job status", (status, expected) => {
+    expect(getScrapeJobStatusLabel(status)).toBe(expected)
+  })
+})
+
+describe("Scrape Job list derivations", () => {
+  const jobs = [
+    ...validScrapeRunDetail.jobs,
+    {
+      ...validScrapeRunDetail.jobs[0],
+      id: 33,
+      status: "pending" as const,
+      primaryIdentifier: null,
+      finishedAt: null,
+    },
+  ]
+
+  it("selects the configured Primary Identifier Field Label", () => {
+    expect(getPrimaryIdentifierField(validScrapeRunDetail.fields)?.label).toBe(
+      "Client Name",
+    )
+  })
+
+  it("filters exact statuses without changing backend order", () => {
+    expect(filterScrapeJobsByStatus(jobs, "all").map(({ id }) => id)).toEqual([
+      31, 32, 33,
+    ])
+    expect(
+      filterScrapeJobsByStatus(jobs, "complete").map(({ id }) => id),
+    ).toEqual([31])
+    expect(
+      filterScrapeJobsByStatus(jobs, "in_progress").map(({ id }) => id),
+    ).toEqual([])
+  })
+
+  it("counts every exact status for filter options", () => {
+    expect(getScrapeJobStatusCounts(jobs)).toEqual({
+      all: 3,
+      pending: 1,
+      in_progress: 0,
+      complete: 1,
+      failed: 1,
+      cancelled: 0,
+    })
+  })
+
+  it("uses fixed 25-row pages and preserves stable order", () => {
+    const manyJobs = Array.from({ length: 53 }, (_, index) => ({
+      ...validScrapeRunDetail.jobs[0],
+      id: index + 1,
+    }))
+
+    expect(SCRAPE_JOB_PAGE_SIZE).toBe(25)
+    expect(paginateScrapeJobs(manyJobs, 2).map(({ id }) => id)).toEqual(
+      Array.from({ length: 25 }, (_, index) => index + 26),
+    )
+    expect(paginateScrapeJobs(manyJobs, 3).map(({ id }) => id)).toEqual([
+      51, 52, 53,
+    ])
+  })
+
+  it.each([
+    [5, 0, 1],
+    [-2, 53, 1],
+    [2, 53, 2],
+    [9, 53, 3],
+    [3, 26, 2],
+  ])(
+    "clamps requested page %s for %s jobs to %s",
+    (requestedPage, totalJobs, expectedPage) => {
+      expect(clampScrapeJobPage(requestedPage, totalJobs)).toBe(expectedPage)
+    },
+  )
+
+  it.each([
+    [0, 1, { start: 0, end: 0, total: 0 }],
+    [53, 1, { start: 1, end: 25, total: 53 }],
+    [53, 2, { start: 26, end: 50, total: 53 }],
+    [53, 8, { start: 51, end: 53, total: 53 }],
+  ])(
+    "derives the visible range for %s jobs on page %s",
+    (totalJobs, page, expectedRange) => {
+      expect(getVisibleScrapeJobRange(totalJobs, page)).toEqual(expectedRange)
+    },
+  )
+})
+
 describe("Scrape Run secondary text", () => {
   it("displays only the Target Site hostname", () => {
     expect(getTargetSiteHostname("https://customers.example.com:8443/")).toBe(
@@ -187,11 +312,15 @@ describe("Scrape Run secondary text", () => {
     )
   })
 
-  it("formats creation date and time with stable locale options", () => {
+  it("formats Run and job timestamps with stable locale options", () => {
     const localDate = new Date(2026, 3, 1, 10, 5)
+    const timestamp = localDate.toISOString()
 
-    expect(
-      formatScrapeRunCreatedAt(localDate.toISOString(), "en-US"),
-    ).toBe("Apr 1, 2026, 10:05 AM")
+    expect(formatScrapeRunTimestamp(timestamp, "en-US")).toBe(
+      "Apr 1, 2026, 10:05 AM",
+    )
+    expect(formatScrapeRunCreatedAt(timestamp, "en-US")).toBe(
+      "Apr 1, 2026, 10:05 AM",
+    )
   })
 })

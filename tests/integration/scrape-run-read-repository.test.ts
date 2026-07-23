@@ -1,3 +1,4 @@
+import { eq } from "drizzle-orm"
 import { beforeEach, describe, expect, it } from "vitest"
 
 import { db } from "@/db"
@@ -211,6 +212,8 @@ describe("scrape-run polling read repository", () => {
 
     expect(detail).toMatchObject({
       id: run.id,
+      failureCode: null,
+      failureMessage: null,
       exampleUrls: [
         "https://example.com/customers/acme",
         "https://example.com/customers/globex",
@@ -248,8 +251,44 @@ describe("scrape-run polling read repository", () => {
         failureCode: "scrape_failed",
       },
     ])
+    expect(detail).not.toHaveProperty("workflowRunId")
     expect(detail?.jobs[0]).not.toHaveProperty("result")
     expect(detail?.jobs[1]).not.toHaveProperty("failureMessage")
+  })
+
+  it("returns sanitized Run-level failure fields only to the owner", async () => {
+    const owner = await createUser("Owner")
+    const otherUser = await createUser("Other User")
+    const run = await createRun({
+      userId: owner.id,
+      name: "Failed preparation",
+      createdAt: new Date("2026-04-01T10:00:00.000Z"),
+    })
+
+    await db
+      .update(scrapeRuns)
+      .set({
+        status: "failed",
+        failureCode: "workflow_dispatch_failed",
+        failureMessage: "The scrape run could not be started.",
+      })
+      .where(eq(scrapeRuns.id, run.id))
+
+    await expect(
+      findOwnedScrapeRunDetail({
+        userId: owner.id,
+        scrapeRunId: run.id,
+      }),
+    ).resolves.toMatchObject({
+      failureCode: "workflow_dispatch_failed",
+      failureMessage: "The scrape run could not be started.",
+    })
+    await expect(
+      findOwnedScrapeRunDetail({
+        userId: otherUser.id,
+        scrapeRunId: run.id,
+      }),
+    ).resolves.toBeNull()
   })
 
   it("enforces ownership and nested run membership while returning full job detail", async () => {
