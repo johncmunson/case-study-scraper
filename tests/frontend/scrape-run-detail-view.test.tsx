@@ -1,13 +1,21 @@
-import { act, screen, waitFor, within } from "@testing-library/react"
+import { act, render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { delay, http, HttpResponse } from "msw"
 import { describe, expect, it, vi } from "vitest"
 
+import ScrapeRunDetailLoading from "@/app/app/scrape-runs/[runId]/loading"
 import { ScrapeRunDetailView } from "@/components/scrape-runs/scrape-run-detail-view"
 import type { ScrapeRunDetail } from "@/lib/scrape-runs/api-contracts"
 import { renderWithSwr } from "@/tests/frontend/render"
 import { validScrapeRunDetail } from "@/tests/frontend/scrape-run-fixtures"
 import { server } from "@/tests/mocks/server"
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    refresh: vi.fn(),
+    replace: vi.fn(),
+  }),
+}))
 
 const apiUrl = "http://localhost/api/scrape-runs/17"
 
@@ -47,6 +55,17 @@ function renderDetail(swrConfiguration?: Parameters<typeof renderWithSwr>[2]) {
 }
 
 describe("Scrape Run detail loading and errors", () => {
+  it("renders the route-transition shell with back navigation", () => {
+    const { container } = render(<ScrapeRunDetailLoading />)
+
+    expect(screen.getByRole("heading", { level: 1, name: "Scrape Run" })).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Scrape Runs" })).toHaveAttribute(
+      "href",
+      "/app/scrape-runs",
+    )
+    expect(container.querySelectorAll('[data-slot="skeleton"]')).not.toHaveLength(0)
+  })
+
   it("keeps back navigation available in a structured initial skeleton", () => {
     server.use(
       http.get(apiUrl, async () => {
@@ -359,6 +378,31 @@ describe("Scrape Run Configuration", () => {
 })
 
 describe("Scrape Run detail polling", () => {
+  it("revalidates terminal cached data when the window regains focus", async () => {
+    vi.useFakeTimers()
+    let requestCount = 0
+    server.use(
+      http.get(apiUrl, () => {
+        requestCount += 1
+        return HttpResponse.json(
+          detail({ status: "complete", finishedAt: "2026-04-01T10:10:00.000Z" }),
+        )
+      }),
+    )
+
+    renderDetail({ focusThrottleInterval: 1 })
+
+    await vi.waitFor(() => expect(requestCount).toBe(1))
+    const focusEvent = new Event("focus")
+    // Browsers coerce SWR's event-derived timer delay to zero; avoid a Node warning.
+    Object.defineProperty(focusEvent, Symbol.toPrimitive, { value: () => 0 })
+    window.dispatchEvent(focusEvent)
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1)
+    })
+    await vi.waitFor(() => expect(requestCount).toBe(2))
+  })
+
   it.each([
     ["pending", null],
     ["in_progress", "2026-04-01T10:05:00.000Z"],
@@ -379,6 +423,36 @@ describe("Scrape Run detail polling", () => {
       await vi.advanceTimersByTimeAsync(3_000)
     })
     await vi.waitFor(() => expect(requestCount).toBe(2))
+  })
+
+  it("keeps active cached sections visible with a warning after a polling failure", async () => {
+    vi.useFakeTimers()
+    let requestCount = 0
+    server.use(
+      http.get(apiUrl, () => {
+        requestCount += 1
+        return requestCount === 1
+          ? HttpResponse.json(detail({ status: "in_progress" }))
+          : HttpResponse.json({ error: "Unavailable." }, { status: 503 })
+      }),
+    )
+
+    renderDetail()
+
+    await vi.waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Customer stories" })).toBeInTheDocument()
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3_000)
+    })
+
+    await vi.waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "Couldn’t refresh scrape run",
+      )
+    })
+    expect(screen.getByRole("heading", { name: "Customer stories" })).toBeInTheDocument()
+    expect(screen.getByRole("list", { name: "Run Stages" })).toBeInTheDocument()
   })
 
   it("suspends polling during an error retry and resumes after a successful active response", async () => {

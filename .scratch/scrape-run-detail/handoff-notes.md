@@ -24,4 +24,4 @@ Phase 2 was completed as planned.
 - Configuration expansion is local and request-free. It exposes only Target Site, Example Pages, Field Labels/descriptions, required state, and the Primary Identifier marker; Field Keys and filtering-model identifiers remain hidden.
 - No direct `useEffect`, server-only client import, job table interaction, or cancellation behavior was introduced. Phase 3 can insert the Scrape Job browser between the existing Stage and Configuration sections.
 
-Verification completed with `pnpm typecheck`, `pnpm lint`, and `pnpm test` (373 tests passing). `pnpm build` compiled and typechecked successfully but could not finish page-data collection because the local environment lacks `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`; this was unrelated to the Phase 2 code.
+Verification completed with `pnpm typecheck`, `pnpm lint`, and `pnpm test` (376 tests passing). `pnpm build` compiled and typechecked successfully but could not finish page-data collection because the local environment lacks `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`; this was unrelated to the Phase 2 code.
