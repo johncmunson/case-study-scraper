@@ -109,13 +109,20 @@ describe("Scrape Run cancellation", () => {
     expect(dialog).toHaveAccessibleDescription(
       "Unfinished work will stop. Scrape Jobs that already finished will keep their outcomes.",
     )
-    expect(
-      within(dialog).getByRole("button", { name: "Keep running" }),
-    ).toBeInTheDocument()
+    const keepRunning = within(dialog).getByRole("button", {
+      name: "Keep running",
+    })
+    expect(keepRunning).toBeInTheDocument()
+    expect(keepRunning).toHaveFocus()
     expect(
       within(dialog).getByRole("button", { name: "Cancel Scrape Run" }),
     ).toBeInTheDocument()
     expect(postCount).toBe(0)
+
+    await userEvent.click(keepRunning)
+
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument()
+    expect(trigger).toHaveFocus()
   })
 
   it("offers and completes retry cancellation with recovery-specific copy", async () => {
@@ -382,6 +389,61 @@ describe("Scrape Run cancellation", () => {
     expect(
       screen.getByText("2 succeeded · 1 failed · 2 cancelled"),
     ).toBeInTheDocument()
+  })
+
+  it("shows the stale-data warning when only detail revalidation fails", async () => {
+    let detailGetCount = 0
+    let listGetCount = 0
+    server.use(
+      http.get(detailApiUrl, () => {
+        detailGetCount += 1
+        return detailGetCount === 1
+          ? HttpResponse.json(detail())
+          : HttpResponse.json({ error: "Unavailable." }, { status: 503 })
+      }),
+      http.get(listApiUrl, () => {
+        listGetCount += 1
+        return HttpResponse.json([
+          listGetCount === 1
+            ? summary()
+            : summary({
+                status: "cancelled",
+                cancellationRequestedAt: "2026-04-01T10:05:00.000Z",
+                finishedAt: "2026-04-01T10:10:00.000Z",
+              }),
+        ])
+      }),
+      http.post(`${detailApiUrl}/cancel`, () =>
+        HttpResponse.json(
+          { id: 17, status: "cancelled" },
+          { status: 202 },
+        ),
+      ),
+    )
+
+    renderDetail(true)
+    await screen.findByRole("heading", { name: "Customer stories" })
+
+    const user = userEvent.setup()
+    await user.click(
+      screen.getByRole("button", { name: "Cancel Scrape Run" }),
+    )
+    await user.click(
+      within(screen.getByRole("alertdialog")).getByRole("button", {
+        name: "Cancel Scrape Run",
+      }),
+    )
+
+    expect(
+      await screen.findByText("Couldn’t refresh scrape run"),
+    ).toBeInTheDocument()
+    expect(getRunHeader().getByLabelText("Status: Cancelled")).toBeInTheDocument()
+    expect(screen.getByLabelText("Run-list cached status")).toHaveTextContent(
+      "cancelled",
+    )
+    expect(screen.getByText("2 succeeded · 1 failed")).toBeInTheDocument()
+    expect(detailGetCount).toBe(2)
+    expect(listGetCount).toBe(2)
   })
 
   it("shows the stale-data warning when only Run-list revalidation fails", async () => {

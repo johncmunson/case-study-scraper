@@ -153,6 +153,7 @@ export function ScrapeRunDetailView({ runId }: { runId: string }) {
   const { mutate: mutateCache } = useSWRConfig()
   const [cancellationNotice, setCancellationNotice] =
     useState<CancellationNotice | null>(null)
+  const [detailRefreshFailed, setDetailRefreshFailed] = useState(false)
   const [listRefreshFailed, setListRefreshFailed] = useState(false)
   const [notFoundAfterCancellation, setNotFoundAfterCancellation] =
     useState(false)
@@ -192,6 +193,7 @@ export function ScrapeRunDetailView({ runId }: { runId: string }) {
         { revalidate: false },
       ),
     ])
+    setDetailRefreshFailed(detailResult.status === "rejected")
     setListRefreshFailed(listResult.status === "rejected")
 
     return { detailResult, listResult }
@@ -325,7 +327,7 @@ export function ScrapeRunDetailView({ runId }: { runId: string }) {
       {cancellationNotice && (
         <CancellationWarning notice={cancellationNotice} />
       )}
-      {(error || listRefreshFailed) && (
+      {(error || detailRefreshFailed || listRefreshFailed) && (
         <RefreshWarning onRetry={retryReadModels} />
       )}
       <ScrapeRunOverview run={data} />
