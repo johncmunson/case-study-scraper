@@ -1,5 +1,6 @@
 import { ExternalLinkIcon } from "lucide-react"
 import Link from "next/link"
+import type { ReactNode } from "react"
 
 import { Badge } from "@/components/ui/badge"
 import {
@@ -61,7 +62,13 @@ function RunTimestamp({
   )
 }
 
-export function ScrapeRunDetailHeader({ run }: { run: ScrapeRunDetail }) {
+export function ScrapeRunDetailHeader({
+  run,
+  cancellationAction,
+}: {
+  run: ScrapeRunDetail
+  cancellationAction?: ReactNode
+}) {
   const hostname = getTargetSiteHostname(run.targetUrl)
   const statusLabel = getScrapeRunStatusLabel(run)
   const showSpinner =
@@ -103,13 +110,16 @@ export function ScrapeRunDetailHeader({ run }: { run: ScrapeRunDetail }) {
           </a>
         </div>
 
-        <Badge
-          aria-label={`Status: ${statusLabel}`}
-          variant={getStatusBadgeVariant(run)}
-        >
-          {showSpinner && <Spinner aria-hidden="true" />}
-          {statusLabel}
-        </Badge>
+        <div className="flex shrink-0 flex-col items-start gap-3 sm:items-end">
+          <Badge
+            aria-label={`Status: ${statusLabel}`}
+            variant={getStatusBadgeVariant(run)}
+          >
+            {showSpinner && <Spinner aria-hidden="true" />}
+            {statusLabel}
+          </Badge>
+          {cancellationAction}
+        </div>
       </div>
 
       <dl className="grid grid-cols-[max-content_minmax(0,1fr)] gap-x-3 gap-y-1 text-sm text-muted-foreground sm:grid-cols-[repeat(2,max-content_minmax(0,1fr))] sm:gap-x-4">

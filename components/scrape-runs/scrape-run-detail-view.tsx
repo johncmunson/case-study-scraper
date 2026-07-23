@@ -2,8 +2,11 @@
 
 import { CircleAlertIcon } from "lucide-react"
 import Link from "next/link"
-import useSWR from "swr"
+import { useState } from "react"
+import useSWR, { useSWRConfig } from "swr"
+import useSWRMutation from "swr/mutation"
 
+import { CancelScrapeRunDialog } from "@/components/scrape-runs/cancel-scrape-run-dialog"
 import { ScrapeJobSummaryTable } from "@/components/scrape-runs/scrape-job-summary-table"
 import { ScrapeRunConfiguration } from "@/components/scrape-runs/scrape-run-configuration"
 import { ScrapeRunDetailHeader } from "@/components/scrape-runs/scrape-run-detail-header"
@@ -27,10 +30,16 @@ import {
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import {
+  cancelScrapeRun,
   fetchScrapeRunDetail,
+  fetchScrapeRunSummaries,
+  getScrapeRunCancellationApiPath,
   getScrapeRunDetailApiPath,
+  SCRAPE_RUNS_API_PATH,
   ScrapeRunApiError,
+  type CancelScrapeRunResponse,
   type ScrapeRunDetail,
+  type ScrapeRunSummaryList,
 } from "@/lib/scrape-runs/api-contracts"
 import { isActiveScrapeRun } from "@/lib/scrape-runs/presentation"
 import { cn } from "@/lib/utils"
@@ -108,6 +117,25 @@ function InitialErrorState({ onRetry }: { onRetry: () => void }) {
   )
 }
 
+type CancellationNotice = Readonly<{
+  title: string
+  description: string
+}>
+
+function CancellationWarning({
+  notice,
+}: {
+  notice: CancellationNotice
+}) {
+  return (
+    <Alert>
+      <CircleAlertIcon aria-hidden="true" />
+      <AlertTitle>{notice.title}</AlertTitle>
+      <AlertDescription>{notice.description}</AlertDescription>
+    </Alert>
+  )
+}
+
 function RefreshWarning({ onRetry }: { onRetry: () => void }) {
   return (
     <Alert>
@@ -122,6 +150,12 @@ function RefreshWarning({ onRetry }: { onRetry: () => void }) {
 }
 
 export function ScrapeRunDetailView({ runId }: { runId: string }) {
+  const { mutate: mutateCache } = useSWRConfig()
+  const [cancellationNotice, setCancellationNotice] =
+    useState<CancellationNotice | null>(null)
+  const [listRefreshFailed, setListRefreshFailed] = useState(false)
+  const [notFoundAfterCancellation, setNotFoundAfterCancellation] =
+    useState(false)
   const detailPath = getScrapeRunDetailApiPath(runId)
   const { data, error, mutate } = useSWR<
     ScrapeRunDetail,
@@ -136,8 +170,39 @@ export function ScrapeRunDetailView({ runId }: { runId: string }) {
     revalidateOnReconnect: true,
     shouldRetryOnError: shouldRetryDetailRequest,
   })
+  const cancellationPath = getScrapeRunCancellationApiPath(runId)
+  const { trigger: cancelRun, isMutating: isCancelling } = useSWRMutation<
+    CancelScrapeRunResponse,
+    ScrapeRunApiError
+  >(cancellationPath, cancelScrapeRun)
   const retry = () => {
     void mutate()
+  }
+
+  async function revalidateReadModels() {
+    const [detailResult, listResult] = await Promise.allSettled([
+      mutateCache<ScrapeRunDetail>(
+        detailPath,
+        fetchScrapeRunDetail(detailPath),
+        { revalidate: false },
+      ),
+      mutateCache<ScrapeRunSummaryList>(
+        SCRAPE_RUNS_API_PATH,
+        fetchScrapeRunSummaries(SCRAPE_RUNS_API_PATH),
+        { revalidate: false },
+      ),
+    ])
+    setListRefreshFailed(listResult.status === "rejected")
+
+    return { detailResult, listResult }
+  }
+
+  function retryReadModels() {
+    void revalidateReadModels()
+  }
+
+  if (notFoundAfterCancellation) {
+    return <NotFoundState />
   }
 
   if (data === undefined) {
@@ -152,10 +217,117 @@ export function ScrapeRunDetailView({ runId }: { runId: string }) {
     )
   }
 
+  const cancellationAction = isActiveScrapeRun(data) ? (
+    <CancelScrapeRunDialog
+      isMutating={isCancelling}
+      isRetry={data.cancellationRequestedAt !== null}
+      onConfirm={async () => {
+        setCancellationNotice(null)
+
+        try {
+          const cancelledRun = await cancelRun()
+
+          if (cancelledRun.id !== data.id) {
+            throw new ScrapeRunApiError(
+              "The server returned an invalid response.",
+              { status: 202 },
+            )
+          }
+
+          await Promise.all([
+            mutateCache<ScrapeRunDetail>(
+              detailPath,
+              (currentDetail) =>
+                currentDetail
+                  ? { ...currentDetail, status: cancelledRun.status }
+                  : currentDetail,
+              { revalidate: false },
+            ),
+            mutateCache<ScrapeRunSummaryList>(
+              SCRAPE_RUNS_API_PATH,
+              (currentRuns) =>
+                currentRuns?.map((run) =>
+                  run.id === cancelledRun.id
+                    ? { ...run, status: cancelledRun.status }
+                    : run,
+                ),
+              { revalidate: false },
+            ),
+          ])
+          await revalidateReadModels()
+        } catch (caughtError) {
+          const cancellationError =
+            caughtError instanceof ScrapeRunApiError
+              ? caughtError
+              : new ScrapeRunApiError("Unable to cancel the scrape run.")
+
+          if (cancellationError.status === 409) {
+            setCancellationNotice({
+              title: "Scrape Run finished before cancellation",
+              description:
+                "The Scrape Run completed or failed before cancellation took effect. Showing its latest state.",
+            })
+            await revalidateReadModels()
+            return
+          }
+
+          if (cancellationError.status === 503) {
+            setCancellationNotice({
+              title: "Cancellation hasn’t finished",
+              description:
+                "The cancellation request was recorded, but cleanup did not finish. Retry cancellation after the latest state loads.",
+            })
+            await revalidateReadModels()
+            return
+          }
+
+          if (cancellationError.status === 404) {
+            setCancellationNotice({
+              title: "Couldn’t cancel scrape run",
+              description:
+                "The Scrape Run could not be found. Checking whether it is still available.",
+            })
+            const [detailResult] = await Promise.allSettled([
+              mutateCache<ScrapeRunDetail>(
+                detailPath,
+                fetchScrapeRunDetail(detailPath),
+                { revalidate: false },
+              ),
+            ])
+
+            if (
+              detailResult.status === "rejected" &&
+              detailResult.reason instanceof ScrapeRunApiError &&
+              detailResult.reason.status === 404
+            ) {
+              setNotFoundAfterCancellation(true)
+            }
+            return
+          }
+
+          setCancellationNotice({
+            title: "Couldn’t confirm cancellation",
+            description:
+              "The request may have reached the server. Showing the latest available Scrape Run state.",
+          })
+          await revalidateReadModels()
+        }
+      }}
+    />
+  ) : undefined
+
   return (
     <div className="space-y-6">
-      <ScrapeRunDetailHeader run={data} />
-      {error && <RefreshWarning onRetry={retry} />}
+      <ScrapeRunDetailHeader
+        run={data}
+        cancellationAction={cancellationAction}
+      />
+      {cancellationNotice && (
+        <CancellationWarning notice={cancellationNotice} />
+      )}
+      {(error || listRefreshFailed) && (
+        <RefreshWarning onRetry={retryReadModels} />
+      )}
       <ScrapeRunOverview run={data} />
       <ScrapeRunStageList stages={data.stages} />
       <ScrapeJobSummaryTable run={data} />

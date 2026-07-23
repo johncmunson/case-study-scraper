@@ -38,3 +38,15 @@ Phase 3 was completed as planned.
 The only implementation wrinkle was that adding job status badges and the Primary Identifier heading introduced intentional duplicate labels in a few Phase 2 integration tests; those assertions were scoped to the Run header or Configuration section rather than changing user-facing copy. No product-scope deviations were needed.
 
 Verification completed with `pnpm typecheck`, `pnpm lint`, and `pnpm test` (384 tests passing). Phase 4 can add cancellation without changing the job browser's local state or data boundary.
+
+## Phase 4 — Run cancellation and cache reconciliation
+
+Phase 4 was completed as planned.
+
+- Active Runs now expose an accessible AlertDialog confirmation for **Cancel Scrape Run**; Runs with a persisted but incomplete Cancellation Request expose **Retry cancellation** with recovery-specific copy. Duplicate submission, Escape, trigger, and cancel-button dismissal are blocked while the POST is in flight.
+- Cancellation is owned by `useSWRMutation` and never retries automatically. A validated `202` projects only `status: "cancelled"` into the detail and Run-list caches, then explicitly refetches and runtime-validates both complete read models.
+- `409`, `503`, `404`, network failures, malformed success bodies, and response-ID mismatches reconcile safely. Completion races load the persisted winner, incomplete cleanup remains active and retryable, confirmed missing Runs transition to the not-found state, and uncertain outcomes preserve cached content behind safe warnings.
+- Failed post-cancellation GETs retain the confirmed Cancelled projection and stale ancillary detail. The normal refresh warning retries both read models, including the case where only Run-list reconciliation failed.
+- Focused MSW/Testing Library coverage exercises confirmation and retry flows, in-flight dismissal protection, all required response outcomes, no automatic POST retry, detail/list cache projection, revalidation success and failure, and accessible dialog naming/description.
+
+No backend or contract changes were needed in this phase; the cancellation endpoint and validated fetcher from earlier phases already matched the required mutation contract. Phase 5 can focus on integrated responsive/accessibility hardening and cross-feature race coverage.
