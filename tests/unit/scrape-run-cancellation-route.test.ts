@@ -105,7 +105,7 @@ describe("POST /api/scrape-runs/:runId/cancel", () => {
     },
   )
 
-  it("records intent, cancels the Workflow, completes cleanup, and returns 202", async () => {
+  it("records the Cancellation Request, cancels the Workflow, completes cleanup, and returns 202", async () => {
     const response = await POST(new Request("http://localhost"), context())
 
     expect(getRun).toHaveBeenCalledWith("wfr_123")
@@ -168,7 +168,7 @@ describe("POST /api/scrape-runs/:runId/cancel", () => {
     })
   })
 
-  it("retains cancellation intent and returns 503 when Workflow cancellation fails", async () => {
+  it("retains the Cancellation Request and returns 503 when Workflow cancellation fails", async () => {
     cancelWorkflow.mockRejectedValue(new Error("workflow provider details"))
 
     const response = await POST(new Request("http://localhost"), context())

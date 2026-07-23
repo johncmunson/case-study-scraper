@@ -142,7 +142,7 @@ Notes for Phase 10:
 Implemented the owner-scoped, two-phase Cancellation API.
 
 - Added `POST /api/scrape-runs/:runId/cancel`, including authentication and ownership enforcement, atomic Cancellation Request recording, Workflow cancellation through `getRun(...).cancel()`, and transactional cleanup of unfinished stages and scrape jobs.
-- Repeated requests retry a previously failed Workflow cancellation, while already-cancelled runs return `202` idempotently. Completed or failed runs return `409`; missing/non-owned runs return `404`; Workflow cancellation failures retain intent and return a sanitized `503` without prematurely cleaning up PostgreSQL state.
+- Repeated requests retry a previously failed Workflow cancellation, while already-cancelled runs return `202` idempotently. Completed or failed runs return `409`; missing/non-owned runs return `404`; Workflow cancellation failures retain the Cancellation Request and return a sanitized `503` without prematurely cleaning up PostgreSQL state.
 - Added route coverage for every declared status and for runs without an attached Workflow ID. Existing lifecycle integration coverage continues to prove repeated cancellation, completion races, terminal-state protection, and preservation of successful results.
 - Added Workflow integration coverage for cancellation during Mapping, Filtering, and Scraping, including proof that completed Mapping and successful pre-cancellation Extraction Results remain intact and late provider work cannot resume downstream processing.
 
