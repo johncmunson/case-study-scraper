@@ -9,3 +9,13 @@
 - No plan deviations. Phase 2 can use `SCRAPE_RUNS_API_PATH`, `fetchScrapeRunSummaries`, the inferred summary types, and the presentation helpers directly.
 
 Verification completed: `pnpm test` (all 20 files and 250 tests, including unit, frontend, integration, and Workflow projects), `pnpm typecheck`, and `pnpm lint`.
+
+# Phase 2 handoff
+
+- Added the client-owned SWR read experience in `components/scrape-runs/scrape-runs-view.tsx`, while keeping `app/app/scrape-runs/page.tsx` as a thin Server Component. The existing creation dialog remains unchanged for the Phase 3 mutation migration.
+- Added responsive outlined Item presentation, status treatments, active/cancelling spinners, state-aware Scrape Job summaries, accessible determinate progress, semantic locale timestamps, skeletons, empty state, and distinct initial/refresh error states.
+- GET requests now retry network and `5xx` failures up to three times with SWR backoff, never retry `4xx`, retain focus/reconnect behavior, and poll every three seconds only while cached data contains an Active Scrape Run. SWR’s error-aware polling loop suspends interval revalidation while a retry is outstanding.
+- Added focused component coverage for all list states, statuses, progress/outcomes, manual retry, bounded retries, cached refresh failures, background revalidation, and active-to-terminal polling. Extended `renderWithSwr` only to allow per-test SWR timing overrides while preserving an isolated cache.
+- No plan deviations or unexpected product issues. One review suggestion was applied by removing a redundant `isLoading` prop; alert consolidation suggestions were intentionally left alone because the two explicit states are small and clearer than a generic abstraction.
+
+Verification completed: `pnpm test` (all 21 files and 258 tests, including unit, frontend, integration, and Workflow projects), `pnpm typecheck`, and `pnpm lint`.
