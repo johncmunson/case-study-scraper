@@ -132,19 +132,14 @@ export function getScrapeJobStatusCounts(jobs: readonly ScrapeJobSummary[]) {
   return counts
 }
 
-function validPageSize(pageSize: number) {
-  return Number.isInteger(pageSize) && pageSize > 0
-    ? pageSize
-    : SCRAPE_JOB_PAGE_SIZE
-}
-
 export function clampScrapeJobPage(
   requestedPage: number,
   totalJobs: number,
-  pageSize = SCRAPE_JOB_PAGE_SIZE,
 ) {
-  const normalizedPageSize = validPageSize(pageSize)
-  const totalPages = Math.max(1, Math.ceil(totalJobs / normalizedPageSize))
+  const totalPages = Math.max(
+    1,
+    Math.ceil(totalJobs / SCRAPE_JOB_PAGE_SIZE),
+  )
   const integerPage = Number.isFinite(requestedPage)
     ? Math.trunc(requestedPage)
     : 1
@@ -155,39 +150,27 @@ export function clampScrapeJobPage(
 export function paginateScrapeJobs<T extends ScrapeJobSummary>(
   jobs: readonly T[],
   requestedPage: number,
-  pageSize = SCRAPE_JOB_PAGE_SIZE,
 ) {
-  const normalizedPageSize = validPageSize(pageSize)
-  const page = clampScrapeJobPage(
-    requestedPage,
-    jobs.length,
-    normalizedPageSize,
-  )
-  const start = (page - 1) * normalizedPageSize
+  const page = clampScrapeJobPage(requestedPage, jobs.length)
+  const start = (page - 1) * SCRAPE_JOB_PAGE_SIZE
 
-  return jobs.slice(start, start + normalizedPageSize)
+  return jobs.slice(start, start + SCRAPE_JOB_PAGE_SIZE)
 }
 
 export function getVisibleScrapeJobRange(
   totalJobs: number,
   requestedPage: number,
-  pageSize = SCRAPE_JOB_PAGE_SIZE,
 ) {
   if (totalJobs === 0) {
     return { start: 0, end: 0, total: 0 }
   }
 
-  const normalizedPageSize = validPageSize(pageSize)
-  const page = clampScrapeJobPage(
-    requestedPage,
-    totalJobs,
-    normalizedPageSize,
-  )
-  const start = (page - 1) * normalizedPageSize + 1
+  const page = clampScrapeJobPage(requestedPage, totalJobs)
+  const start = (page - 1) * SCRAPE_JOB_PAGE_SIZE + 1
 
   return {
     start,
-    end: Math.min(start + normalizedPageSize - 1, totalJobs),
+    end: Math.min(start + SCRAPE_JOB_PAGE_SIZE - 1, totalJobs),
     total: totalJobs,
   }
 }

@@ -173,6 +173,46 @@ describe("Scrape Run detail frontend contract", () => {
     ).toBe(false)
   })
 
+  it.each([
+    [
+      "misordered field positions",
+      {
+        fields: [
+          validScrapeRunDetail.fields[1],
+          validScrapeRunDetail.fields[0],
+        ],
+      },
+    ],
+    [
+      "duplicate field positions",
+      {
+        fields: validScrapeRunDetail.fields.map((field) => ({
+          ...field,
+          position: 0,
+        })),
+      },
+    ],
+    [
+      "misordered job IDs",
+      {
+        jobs: [validScrapeRunDetail.jobs[1], validScrapeRunDetail.jobs[0]],
+      },
+    ],
+    [
+      "duplicate job IDs",
+      {
+        jobs: validScrapeRunDetail.jobs.map((job) => ({ ...job, id: 31 })),
+      },
+    ],
+  ])("rejects %s", (_label, replacement) => {
+    expect(
+      scrapeRunDetailSchema.safeParse({
+        ...validScrapeRunDetail,
+        ...replacement,
+      }).success,
+    ).toBe(false)
+  })
+
   it("rejects job counts that do not sum to total", () => {
     expect(
       scrapeRunDetailSchema.safeParse({

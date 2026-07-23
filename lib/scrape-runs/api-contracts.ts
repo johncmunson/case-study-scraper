@@ -124,6 +124,18 @@ export const scrapeRunStageStateSchema = z
   })
   .strict()
 
+const orderedScrapeRunFieldsSchema = z
+  .array(scrapeRunFieldSchema)
+  .min(1)
+  .refine(
+    (fields) =>
+      fields.every(
+        (field, index) =>
+          index === 0 || fields[index - 1].position < field.position,
+      ),
+    { message: "Extraction Fields must be ordered by unique positions." },
+  )
+
 export const scrapeJobSummarySchema = z
   .object({
     id: positiveIntegerSchema,
@@ -138,6 +150,16 @@ export const scrapeJobSummarySchema = z
     finishedAt: nullableIsoDateTimeSchema,
   })
   .strict()
+
+const orderedScrapeJobSummariesSchema = z
+  .array(scrapeJobSummarySchema)
+  .refine(
+    (jobs) =>
+      jobs.every(
+        (job, index) => index === 0 || jobs[index - 1].id < job.id,
+      ),
+    { message: "Scrape Jobs must be ordered by unique IDs." },
+  )
 
 const canonicalRunStagesSchema = z
   .array(scrapeRunStageStateSchema)
@@ -156,9 +178,9 @@ export const scrapeRunDetailSchema = scrapeRunSummarySchema
     failureMessage: z.string().nullable(),
     exampleUrls: z.array(httpUrlSchema),
     filteringModel: nonemptyStringSchema,
-    fields: z.array(scrapeRunFieldSchema).min(1),
+    fields: orderedScrapeRunFieldsSchema,
     stages: canonicalRunStagesSchema,
-    jobs: z.array(scrapeJobSummarySchema),
+    jobs: orderedScrapeJobSummariesSchema,
   })
   .strict()
   .superRefine(({ fields }, context) => {
@@ -195,7 +217,7 @@ export const cancelScrapeRunResponseSchema = z
 
 export const scrapeRunApiErrorResponseSchema = z
   .object({
-    error: z.string().min(1).refine((message) => message.trim().length > 0),
+    error: nonemptyStringSchema,
     scrapeRunId: z.number().int().positive().optional(),
   })
   .strip()
