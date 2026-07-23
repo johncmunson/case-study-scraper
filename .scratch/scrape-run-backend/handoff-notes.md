@@ -122,3 +122,17 @@ Notes for Phase 9:
 - `persistScrapeJobsStep` now returns the persisted job identities (rather than only a count), and a successful Workflow result is `{ outcome: "complete" | "failed" | "cancelled", scrapeRunId, jobCount }`. Preparation failure and stopped/unclaimable outcomes remain unchanged.
 - The Workflow's claim step still self-attaches its Workflow run ID. Phase 9 should attach the ID returned by `start()` as planned; either side may win because repository attachment/claim is idempotent for the same ID.
 - No migration or new dependency was needed. The existing patched `@workflow/vitest` builder workaround remains necessary.
+
+# Phase 9 handoff
+
+Implemented the authenticated Create and Dispatch API.
+
+- `POST /api/scrape-runs` now authenticates the request, preflights database, Firecrawl, AI Gateway authentication, and URL-filtering model configuration before persistence, validates and normalizes the payload, and transactionally creates the Run Configuration and stages through the existing repository.
+- Successful creation starts `scrapeRunWorkflow` with only the application run ID, attaches the returned Workflow run ID idempotently, and returns a polling-compatible initial run summary. The static `start(scrapeRunWorkflow, ...)` entrypoint also makes Workflow discovery report the production workflow.
+- Active-run uniqueness conflicts return `409`. A rejected Workflow dispatch is compensated through the lifecycle repository, returns `503` with the persisted scrape run ID, and leaves the run failed with all stages skipped. Provider errors are not exposed.
+- Removed payload logging and added route coverage for `201`, malformed and invalid `400` requests, unauthenticated `401`, active-run `409`, deployment and dispatch `503` cases, normalized persistence input, Workflow ID attachment, compensation, and response boundaries.
+
+Notes for Phase 10:
+
+- A successful `201` guarantees the route attached the Workflow run ID; attachment remains race-safe when the Workflow claim wins first. If route-side attachment fails after accepted dispatch, the API returns a sanitized `503` with the persisted scrape run ID without falsely compensating an already-accepted dispatch. The claim step may still self-attach and continue that run.
+- No schema migration or dependency change was needed. There were no deviations from the Phase 9 plan.
