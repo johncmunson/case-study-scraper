@@ -35,6 +35,22 @@ export default defineConfig({
       {
         extends: true,
         test: {
+          name: "frontend",
+          environment: "jsdom",
+          environmentOptions: {
+            jsdom: {
+              url: "http://localhost",
+            },
+          },
+          include: [`tests/frontend/**/*.{test,spec}.{ts,tsx}`],
+          setupFiles: ["./tests/setup/frontend.ts"],
+          sequence: { groupOrder: 0 },
+          mockReset: true,
+        },
+      },
+      {
+        extends: true,
+        test: {
           name: "integration",
           include: [`tests/integration/**/*.{test,spec}.{ts,tsx}`],
           setupFiles: [
