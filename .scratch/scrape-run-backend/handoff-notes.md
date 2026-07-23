@@ -136,3 +136,18 @@ Notes for Phase 10:
 
 - A successful `201` guarantees the route attached the Workflow run ID; attachment remains race-safe when the Workflow claim wins first. If route-side attachment fails after accepted dispatch, the API returns a sanitized `503` with the persisted scrape run ID without falsely compensating an already-accepted dispatch. The claim step may still self-attach and continue that run.
 - No schema migration or dependency change was needed. There were no deviations from the Phase 9 plan.
+
+# Phase 10 handoff
+
+Implemented the owner-scoped, two-phase Cancellation API.
+
+- Added `POST /api/scrape-runs/:runId/cancel`, including authentication and ownership enforcement, atomic Cancellation Request recording, Workflow cancellation through `getRun(...).cancel()`, and transactional cleanup of unfinished stages and scrape jobs.
+- Repeated requests retry a previously failed Workflow cancellation, while already-cancelled runs return `202` idempotently. Completed or failed runs return `409`; missing/non-owned runs return `404`; Workflow cancellation failures retain intent and return a sanitized `503` without prematurely cleaning up PostgreSQL state.
+- Added route coverage for every declared status and for runs without an attached Workflow ID. Existing lifecycle integration coverage continues to prove repeated cancellation, completion races, terminal-state protection, and preservation of successful results.
+- Added Workflow integration coverage for cancellation during Mapping, Filtering, and Scraping, including proof that completed Mapping and successful pre-cancellation Extraction Results remain intact and late provider work cannot resume downstream processing.
+
+Notes for Phase 11:
+
+- The cancellation response intentionally contains only `{ id, status: "cancelled" }`; polling-oriented cancellation-request timestamps and full state remain the responsibility of the Phase 11 read models.
+- Cancellation needs no provider/deployment preflight. A run with no attached Workflow ID is cleaned up directly; this covers the accepted post-commit/pre-dispatch window as well as pending runs.
+- No migration or dependency change was needed, and there were no deviations from the Phase 10 plan.

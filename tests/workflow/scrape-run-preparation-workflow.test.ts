@@ -2,6 +2,7 @@ import { and, eq } from "drizzle-orm"
 import { http, HttpResponse } from "msw"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { start } from "workflow/api"
+import { WorkflowRunCancelledError } from "workflow/errors"
 
 import { db } from "@/db"
 import { scrapeJobs, scrapeRunStages, users } from "@/db/schema"
@@ -55,6 +56,14 @@ async function seedPendingRun() {
 
 function successfulScrape(json: unknown) {
   return HttpResponse.json({ success: true, data: { json } })
+}
+
+function deferred() {
+  let resolve!: () => void
+  const promise = new Promise<void>((complete) => {
+    resolve = complete
+  })
+  return { promise, resolve }
 }
 
 function gatewayGeneration(urls: string[]) {
@@ -235,6 +244,104 @@ describe("scrape-run Run Preparation Workflow", () => {
       { outcome: "unclaimable", scrapeRunId: unclaimable.run.id },
     ])
     expect(providerCalls).toBe(0)
+  })
+
+  it("stops the Workflow and cancels every stage during Mapping", async () => {
+    const { user, run: pendingRun } = await seedPendingRun()
+    const mapGate = deferred()
+    let mapCalls = 0
+    let filteringCalls = 0
+    server.use(
+      http.post("https://api.firecrawl.dev/v2/map", async () => {
+        mapCalls += 1
+        await mapGate.promise
+        return HttpResponse.json({ success: true, links: [] })
+      }),
+      http.post("https://ai-gateway.vercel.sh/v4/ai/language-model", () => {
+        filteringCalls += 1
+        return HttpResponse.error()
+      }),
+    )
+
+    const workflowRun = await start(scrapeRunWorkflow, [pendingRun.id])
+    await vi.waitFor(() => expect(mapCalls).toBe(1), { timeout: 10_000 })
+    await requestScrapeRunCancellation({
+      userId: user.id,
+      scrapeRunId: pendingRun.id,
+    })
+    await workflowRun.cancel()
+    await completeScrapeRunCancellation({ scrapeRunId: pendingRun.id })
+    mapGate.resolve()
+
+    await expect(workflowRun.returnValue).rejects.toSatisfy(
+      WorkflowRunCancelledError.is,
+    )
+    await expect(
+      findOwnedScrapeRun({ userId: user.id, scrapeRunId: pendingRun.id }),
+    ).resolves.toMatchObject({
+      status: "cancelled",
+      stages: [
+        { stage: "mapping", status: "cancelled" },
+        { stage: "filtering", status: "cancelled" },
+        { stage: "scraping", status: "cancelled" },
+      ],
+    })
+    expect(filteringCalls).toBe(0)
+  })
+
+  it("stops the Workflow and preserves completed Mapping during Filtering cancellation", async () => {
+    const { user, run: pendingRun } = await seedPendingRun()
+    const filteringGate = deferred()
+    let filteringCalls = 0
+    let scrapeCalls = 0
+    server.use(
+      http.post("https://api.firecrawl.dev/v2/map", () =>
+        HttpResponse.json({
+          success: true,
+          links: [
+            { url: "https://example.com/customers/acme" },
+            { url: "https://example.com/customers/globex" },
+          ],
+        }),
+      ),
+      http.post(
+        "https://ai-gateway.vercel.sh/v4/ai/language-model",
+        async () => {
+          filteringCalls += 1
+          await filteringGate.promise
+          return HttpResponse.json(gatewayGeneration([]))
+        },
+      ),
+      http.post("https://api.firecrawl.dev/v2/scrape", () => {
+        scrapeCalls += 1
+        return HttpResponse.error()
+      }),
+    )
+
+    const workflowRun = await start(scrapeRunWorkflow, [pendingRun.id])
+    await vi.waitFor(() => expect(filteringCalls).toBe(1), { timeout: 10_000 })
+    await requestScrapeRunCancellation({
+      userId: user.id,
+      scrapeRunId: pendingRun.id,
+    })
+    await workflowRun.cancel()
+    await completeScrapeRunCancellation({ scrapeRunId: pendingRun.id })
+    filteringGate.resolve()
+
+    await expect(workflowRun.returnValue).rejects.toSatisfy(
+      WorkflowRunCancelledError.is,
+    )
+    await expect(
+      findOwnedScrapeRun({ userId: user.id, scrapeRunId: pendingRun.id }),
+    ).resolves.toMatchObject({
+      status: "cancelled",
+      stages: [
+        { stage: "mapping", status: "complete" },
+        { stage: "filtering", status: "cancelled" },
+        { stage: "scraping", status: "cancelled" },
+      ],
+    })
+    expect(scrapeCalls).toBe(0)
   })
 
   it("cleans up an uncategorized orchestration failure through the top-level boundary", async () => {

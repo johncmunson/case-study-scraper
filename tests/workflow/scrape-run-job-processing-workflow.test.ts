@@ -1,11 +1,13 @@
 import { http, HttpResponse } from "msw"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { start } from "workflow/api"
+import { WorkflowRunCancelledError } from "workflow/errors"
 
 import { db } from "@/db"
 import { scrapeJobs, users } from "@/db/schema"
 import {
   completeMappingAndStartFiltering,
+  completeScrapeRunCancellation,
   createScrapeJobsAndStartScraping,
   requestScrapeRunCancellation,
 } from "@/lib/server/scrape-runs/lifecycle-repository"
@@ -425,6 +427,79 @@ describe("scrape-run Scraping Workflow", () => {
     expect(scrapeCalls).toBe(7)
     expect(maximumActiveCalls).toBe(5)
     expect(secondBatchOverlapped).toBe(false)
+  })
+
+  it("cancels during Scraping without losing a completed Extraction Result", async () => {
+    const { user, run: pendingRun } = await seedPendingRun()
+    const urls = [
+      "https://example.com/customers/acme",
+      "https://example.com/customers/globex",
+    ]
+    const globexGate = deferred()
+    let scrapeCalls = 0
+    usePreparationHandlers(urls)
+    server.use(
+      http.post("https://api.firecrawl.dev/v2/scrape", async ({ request }) => {
+        const { url } = (await request.json()) as { url: string }
+        scrapeCalls += 1
+
+        if (url.endsWith("/globex")) {
+          await globexGate.promise
+        }
+
+        return successfulScrape({ client_name: url.split("/").at(-1) })
+      }),
+    )
+
+    const workflowRun = await start(scrapeRunWorkflow, [pendingRun.id])
+    await vi.waitFor(
+      async () => {
+        const acme = await db.query.scrapeJobs.findFirst({
+          where: (job, { and, eq }) =>
+            and(eq(job.scrapeRunId, pendingRun.id), eq(job.url, urls[0])),
+        })
+        expect(scrapeCalls).toBe(2)
+        expect(acme?.status).toBe("complete")
+      },
+      { timeout: 10_000 },
+    )
+    await requestScrapeRunCancellation({
+      userId: user.id,
+      scrapeRunId: pendingRun.id,
+    })
+    await workflowRun.cancel()
+    await completeScrapeRunCancellation({ scrapeRunId: pendingRun.id })
+    globexGate.resolve()
+
+    await expect(workflowRun.returnValue).rejects.toSatisfy(
+      WorkflowRunCancelledError.is,
+    )
+    const jobs = await db.query.scrapeJobs.findMany({
+      where: (job, { eq }) => eq(job.scrapeRunId, pendingRun.id),
+      orderBy: scrapeJobs.id,
+    })
+    expect(jobs).toEqual([
+      expect.objectContaining({
+        url: urls[0],
+        status: "complete",
+        result: { client_name: "acme" },
+      }),
+      expect.objectContaining({
+        url: urls[1],
+        status: "cancelled",
+        result: null,
+      }),
+    ])
+    await expect(
+      findOwnedScrapeRun({ userId: user.id, scrapeRunId: pendingRun.id }),
+    ).resolves.toMatchObject({
+      status: "cancelled",
+      stages: [
+        { stage: "mapping", status: "complete" },
+        { stage: "filtering", status: "complete" },
+        { stage: "scraping", status: "cancelled" },
+      ],
+    })
   })
 
   it("does not persist late scrape responses after a Cancellation Request wins", async () => {
