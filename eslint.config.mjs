@@ -35,6 +35,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "app/.well-known/workflow/**",
+    ".workflow-data/**",
+    ".workflow-vitest/**",
     "next-env.d.ts",
     "components/ui/**",
   ]),

@@ -1,6 +1,6 @@
 import { Pool } from "pg"
 import { drizzle } from "drizzle-orm/node-postgres"
-import { attachDatabasePool } from "@vercel/functions"
+import { attachDatabasePool } from "@vercel/functions/db-connections"
 import { getDatabaseUrl } from "./databaseUrl"
 import * as schema from "./schema"
 

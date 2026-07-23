@@ -91,3 +91,19 @@ Notes for Phase 7/8:
 - `scrapePageForExtraction` returns an `ExtractionResult` on success, throws `RetryableError` for malformed/transient responses, and throws `MissingRequiredFieldsError` (a `FatalError`) with `failure` and `missingRequiredFieldKeys` for valid responses missing application-required values.
 - Catch `MissingRequiredFieldsError` inside the eventual job step before crossing a Workflow serialization boundary, then pass its diagnostic fields to `failScrapeJob`. Other terminal provider failures should be persisted as `scrape_failed` by the orchestration layer.
 - As with Mapping, Firecrawl is constructed with `maxRetries: 1`; in this installed SDK that means one total request. No `maxAge` is sent.
+
+# Phase 7 handoff
+
+Implemented durable Run Preparation orchestration and Workflow integration testing.
+
+- Enabled `withWorkflow`, added a thin `scrapeRunWorkflow`, and moved claim, provider, lifecycle, job-creation, and failure-cleanup work into `"use step"` functions. Mapping and Filtering each use two Workflow retries (three total attempts), persist attempt admission before provider calls, and stop harmlessly when lifecycle guards reject further work.
+- The Workflow self-attaches its metadata while atomically claiming the run, persists the complete selected job set before entering Scraping, distinguishes Mapping, Filtering, and job-creation failures, and invokes unexpected-failure cleanup for uncategorized errors. Claim replay with the same Workflow run ID now returns the existing claimed configuration idempotently; a competing Workflow ID still exits without work (superseding Phase 3's repeated-claim note).
+- Added a separate `@workflow/vitest` project with coverage for preparation success and Example Page union, duplicate claims, cancelled/deleted/unclaimable runs, three-attempt Mapping and Filtering failures, skipped stages, and the top-level unexpected-failure boundary. The full suite now includes Workflow tests and runs database-backed projects in separate sequence groups.
+- `pnpm test`, `pnpm typecheck`, `pnpm lint`, and `pnpm exec workflow validate` pass.
+
+Notes for Phase 8:
+
+- `scrapeRunWorkflow` currently returns immediately after atomically starting Scraping. Phase 8 should continue from the persisted jobs returned/identified at that boundary and retain only orchestration in the Workflow function.
+- The installed `@workflow/vitest` builder incorrectly bundles `builtin-modules` v5's JSON import without its import attribute, causing generated bundles to fail under Node. A narrow pnpm patch replaces that JSON import with the package's same static array; remove the patch when the upstream builder preserves JSON import attributes.
+- The database import now uses the focused `@vercel/functions/db-connections` export rather than the package root, avoiding unrelated OIDC/runtime dependencies in Workflow step bundles.
+- `next typegen` reports zero production workflows until Phase 9 adds the statically reachable `start(scrapeRunWorkflow, ...)` call in a Next.js server entrypoint; this matches Workflow's documented discovery behavior and does not affect `@workflow/vitest` integration tests.

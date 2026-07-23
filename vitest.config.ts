@@ -28,6 +28,7 @@ export default defineConfig({
           name: "unit",
           include: [`tests/unit/**/*.{test,spec}.{ts,tsx}`],
           setupFiles: ["./tests/setup/unit.ts"],
+          sequence: { groupOrder: 0 },
           mockReset: true,
         },
       },
@@ -41,10 +42,13 @@ export default defineConfig({
             "./tests/setup/integration-database.ts",
           ],
           globalSetup: ["./tests/setup/reset-test-database.ts"],
-          // Integration files share one database, so run them serially.
+          // Integration files share one database, so run them serially and
+          // before the separate Workflow project that uses the same database.
+          sequence: { groupOrder: 1 },
           fileParallelism: false,
         },
       },
+      "./vitest.workflow.config.ts",
     ],
   },
 })

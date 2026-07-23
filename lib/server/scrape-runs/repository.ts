@@ -163,7 +163,20 @@ export async function claimScrapeRun({
       .returning({ id: scrapeRuns.id })
 
     if (!claimed) {
-      return null
+      const replayedClaim = await transaction.query.scrapeRuns.findFirst({
+        where: and(
+          eq(scrapeRuns.id, scrapeRunId),
+          eq(scrapeRuns.status, "in_progress"),
+          eq(scrapeRuns.workflowRunId, workflowRunId),
+          isNull(scrapeRuns.cancellationRequestedAt),
+        ),
+        with: {
+          fields: { orderBy: asc(scrapeRunFields.position) },
+          stages: true,
+        },
+      })
+
+      return replayedClaim ? orderRunStages(replayedClaim) : null
     }
 
     const [mappingStage] = await transaction

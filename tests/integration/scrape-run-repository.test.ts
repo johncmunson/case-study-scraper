@@ -218,7 +218,11 @@ describe("scrape-run repository", () => {
         scrapeRunId: run.id,
         workflowRunId: claimed!.workflowRunId!,
       }),
-    ).resolves.toBeNull()
+    ).resolves.toMatchObject({
+      id: run.id,
+      status: "in_progress",
+      workflowRunId: claimed!.workflowRunId,
+    })
   })
 
   it("only claims a pending run for its already attached Workflow ID", async () => {
