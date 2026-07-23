@@ -26,6 +26,12 @@ import {
 import { Input } from "@/components/ui/input"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Spinner } from "@/components/ui/spinner"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import { ScrapeRunApiError } from "@/lib/scrape-runs/api-contracts"
 import type { NewScrapeRunInput } from "@/lib/scrape-runs/new-scrape-run"
 
 const MIN_EXAMPLE_URLS = 2
@@ -45,39 +51,21 @@ type ExtractField = {
 }
 
 type NewScrapeRunFormProps = {
-  onRequestEnd: (controller: AbortController) => void
-  onRequestStart: (controller: AbortController) => void
+  hasActiveRun: boolean
+  isMutating: boolean
+  onCreate: (input: NewScrapeRunInput) => Promise<unknown>
   onSuccess: () => void
 }
 
-async function getErrorMessage(response: Response) {
-  try {
-    const body: unknown = await response.json()
-
-    if (
-      typeof body === "object" &&
-      body !== null &&
-      "error" in body &&
-      typeof body.error === "string"
-    ) {
-      return body.error
-    }
-  } catch {
-    // Fall through to the status-based message for non-JSON responses.
-  }
-
-  return `Request failed with status ${response.status}.`
-}
-
 function NewScrapeRunForm({
-  onRequestEnd,
-  onRequestStart,
+  hasActiveRun,
+  isMutating,
+  onCreate,
   onSuccess,
 }: NewScrapeRunFormProps) {
   const formId = useId()
   const nextExampleUrlId = useRef(MIN_EXAMPLE_URLS)
   const nextFieldId = useRef(MIN_FIELDS)
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [exampleUrls, setExampleUrls] = useState<ExampleUrl[]>([
     { id: 0 },
     { id: 1 },
@@ -164,10 +152,10 @@ function NewScrapeRunForm({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    setIsSubmitting(true)
 
-    const controller = new AbortController()
-    onRequestStart(controller)
+    if (hasActiveRun || isMutating) {
+      return
+    }
 
     const formData = new FormData(event.currentTarget)
     const payload: NewScrapeRunInput = {
@@ -187,43 +175,30 @@ function NewScrapeRunForm({
     }
 
     try {
-      const response = await fetch("/api/scrape-runs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-        signal: controller.signal,
-      })
-
-      if (!response.ok) {
-        toast.warning(`Error: ${await getErrorMessage(response)}`, {
-          position: TOAST_POSITION,
-        })
-        return
-      }
-
+      await onCreate(payload)
       toast.success("New scrape run created", {
         position: TOAST_POSITION,
       })
       onSuccess()
-    } catch {
-      if (!controller.signal.aborted) {
-        toast.warning("Error: Unable to create the scrape run.", {
-          position: TOAST_POSITION,
-        })
-      }
-    } finally {
-      setIsSubmitting(false)
-      onRequestEnd(controller)
+    } catch (error) {
+      const message =
+        error instanceof ScrapeRunApiError
+          ? error.message
+          : "Unable to create the scrape run."
+
+      toast.warning(`Error: ${message}`, {
+        position: TOAST_POSITION,
+      })
     }
   }
 
   return (
     <form
       className="grid min-h-0 grid-rows-[minmax(0,1fr)_auto] gap-4"
-      aria-busy={isSubmitting}
+      aria-busy={isMutating}
       onSubmit={handleSubmit}
     >
-      <fieldset className="contents" disabled={isSubmitting}>
+      <fieldset className="contents" disabled={isMutating}>
         <div className="min-h-0 space-y-6 overflow-y-auto px-1 pb-1">
           <FieldGroup>
             <Field>
@@ -313,6 +288,7 @@ function NewScrapeRunForm({
 
             <RadioGroup
               className="gap-4"
+              disabled={isMutating}
               value={String(
                 fields.find((field) => field.primaryIdentifier)?.id ?? "",
               )}
@@ -403,9 +379,15 @@ function NewScrapeRunForm({
         </div>
 
         <DialogFooter>
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting && <Spinner />}
-            {isSubmitting ? "Creating…" : "Create Scrape Run"}
+          {hasActiveRun && (
+            <p className="mr-auto self-center text-sm text-muted-foreground">
+              Another Scrape Run is active. Wait for it to finish before
+              creating a new one.
+            </p>
+          )}
+          <Button type="submit" disabled={isMutating || hasActiveRun}>
+            {isMutating && <Spinner />}
+            {isMutating ? "Creating…" : "Create Scrape Run"}
           </Button>
         </DialogFooter>
       </fieldset>
@@ -413,28 +395,58 @@ function NewScrapeRunForm({
   )
 }
 
-export function NewScrapeRunDialog() {
-  const activeRequest = useRef<AbortController | null>(null)
+type NewScrapeRunDialogProps = {
+  hasActiveRun: boolean
+  isMutating: boolean
+  onCreate: (input: NewScrapeRunInput) => Promise<unknown>
+}
+
+export function NewScrapeRunDialog({
+  hasActiveRun,
+  isMutating,
+  onCreate,
+}: NewScrapeRunDialogProps) {
   const [open, setOpen] = useState(false)
 
   return (
     <Dialog
       open={open}
-      onOpenChange={(nextOpen) => {
-        if (!nextOpen) {
-          activeRequest.current?.abort()
-          activeRequest.current = null
+      disablePointerDismissal={isMutating}
+      onOpenChange={(nextOpen, eventDetails) => {
+        if (!nextOpen && isMutating) {
+          eventDetails.cancel()
+          return
         }
 
         setOpen(nextOpen)
       }}
     >
-      <DialogTrigger render={<Button />}>
-        <PlusIcon />
-        Create New Scrape Run
-      </DialogTrigger>
+      <Tooltip>
+        <TooltipTrigger
+          disabled={!hasActiveRun}
+          render={
+            <span
+              className="inline-flex"
+              tabIndex={hasActiveRun ? 0 : -1}
+            />
+          }
+        >
+          <DialogTrigger render={<Button disabled={hasActiveRun} />}>
+            <PlusIcon />
+            Create New Scrape Run
+          </DialogTrigger>
+        </TooltipTrigger>
+        {hasActiveRun && (
+          <TooltipContent>
+            Only one Scrape Run may be active at a time.
+          </TooltipContent>
+        )}
+      </Tooltip>
       {open && (
-        <DialogContent className="max-h-[calc(100svh-2rem)] grid-rows-[auto_minmax(0,1fr)] sm:max-w-2xl">
+        <DialogContent
+          className="max-h-[calc(100svh-2rem)] grid-rows-[auto_minmax(0,1fr)] sm:max-w-2xl"
+          closeButtonDisabled={isMutating}
+        >
           <DialogHeader>
             <DialogTitle>New Scrape Run</DialogTitle>
             <DialogDescription>
@@ -442,14 +454,9 @@ export function NewScrapeRunDialog() {
             </DialogDescription>
           </DialogHeader>
           <NewScrapeRunForm
-            onRequestStart={(controller) => {
-              activeRequest.current = controller
-            }}
-            onRequestEnd={(controller) => {
-              if (activeRequest.current === controller) {
-                activeRequest.current = null
-              }
-            }}
+            hasActiveRun={hasActiveRun}
+            isMutating={isMutating}
+            onCreate={onCreate}
             onSuccess={() => setOpen(false)}
           />
         </DialogContent>

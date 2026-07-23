@@ -1,15 +1,19 @@
 "use client"
 
 import useSWR from "swr"
+import useSWRMutation from "swr/mutation"
 
 import { NewScrapeRunDialog } from "@/components/scrape-runs/new-scrape-run-dialog"
 import { ScrapeRunList } from "@/components/scrape-runs/scrape-run-list"
 import {
+  createScrapeRun,
   fetchScrapeRunSummaries,
   SCRAPE_RUNS_API_PATH,
   ScrapeRunApiError,
+  type ScrapeRunSummary,
   type ScrapeRunSummaryList,
 } from "@/lib/scrape-runs/api-contracts"
+import type { NewScrapeRunInput } from "@/lib/scrape-runs/new-scrape-run"
 import { isActiveScrapeRun } from "@/lib/scrape-runs/presentation"
 
 const ACTIVE_RUN_REFRESH_INTERVAL = 3_000
@@ -33,11 +37,37 @@ export function ScrapeRunsView() {
     revalidateOnReconnect: true,
     shouldRetryOnError: shouldRetryListRequest,
   })
+  const { trigger: createRun, isMutating } = useSWRMutation<
+    ScrapeRunSummary,
+    ScrapeRunApiError,
+    string,
+    NewScrapeRunInput,
+    ScrapeRunSummaryList
+  >(SCRAPE_RUNS_API_PATH, createScrapeRun, {
+    populateCache: (createdRun, currentRuns) => [
+      createdRun,
+      ...(currentRuns ?? []).filter((run) => run.id !== createdRun.id),
+    ],
+    revalidate: false,
+    onError: (createError) => {
+      if (
+        createError.status === 409 ||
+        (createError.status === 503 && createError.scrapeRunId !== undefined)
+      ) {
+        void mutate()
+      }
+    },
+  })
+  const hasActiveRun = data?.some(isActiveScrapeRun) ?? false
 
   return (
     <div className="space-y-6">
       <div className="flex justify-end">
-        <NewScrapeRunDialog />
+        <NewScrapeRunDialog
+          hasActiveRun={hasActiveRun}
+          isMutating={isMutating}
+          onCreate={createRun}
+        />
       </div>
       <ScrapeRunList
         summaries={data}

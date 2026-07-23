@@ -19,3 +19,14 @@ Verification completed: `pnpm test` (all 20 files and 250 tests, including unit,
 - No plan deviations or unexpected product issues. One review suggestion was applied by removing a redundant `isLoading` prop; alert consolidation suggestions were intentionally left alone because the two explicit states are small and clearer than a generic abstraction.
 
 Verification completed: `pnpm test` (all 21 files and 258 tests, including unit, frontend, integration, and Workflow projects), `pnpm typecheck`, and `pnpm lint`.
+
+# Phase 3 handoff
+
+- Migrated creation to `useSWRMutation` on the shared `/api/scrape-runs` key. Validated `201` summaries are prepended and deduplicated through `populateCache` with success revalidation disabled; the inserted pending run naturally starts the existing polling loop.
+- Refactored the dialog to receive the mutation callback, `isMutating`, and the derived Active Scrape Run guard. In-flight creation now disables the form and close control, blocks Escape/outside/trigger dismissal, and no longer owns or aborts an `AbortController`.
+- Added active-run trigger disabling with a keyboard-focusable tooltip, plus inline protection that preserves an already-open form if polling/revalidation discovers another Active Scrape Run.
+- Added reconciliation for `409` and persisted-run `503` failures while leaving ordinary validation/network failures cache-neutral. Typed safe error messages continue to drive warning toasts.
+- Added focused integration coverage for raw payloads, pending dismissal locks, success cache insertion/deduplication, polling, reset-on-remount, failure preservation, reconciliation, malformed success data, active discovery, and active-run tooltips.
+- No plan deviations. Two small test-environment/control details surfaced: Sonner requires a jsdom `matchMedia` shim, and native fieldset disabling does not propagate to Base UI’s span-based radios, so the radio group is disabled explicitly during mutation.
+
+Verification completed: `pnpm test` (all 22 files and 270 tests, including unit, frontend, integration, and Workflow projects), `pnpm typecheck`, and `pnpm lint`.
