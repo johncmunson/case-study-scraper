@@ -1,31 +1,15 @@
 import { getCurrentSession } from "@/auth/session"
 import {
+  numericSessionUserId,
+  positiveIntegerRouteId,
+  scrapeRunNotFoundResponse,
+  unauthorizedResponse,
+} from "@/app/api/scrape-runs/_route-helpers"
+import {
   completeScrapeRunCancellation,
   requestScrapeRunCancellation,
 } from "@/lib/server/scrape-runs/lifecycle-repository"
 import { getRun } from "workflow/api"
-
-function numericUserId(id: string | number) {
-  const userId = Number(id)
-
-  if (!Number.isSafeInteger(userId)) {
-    throw new Error("Expected the authenticated user id to be a numeric value.")
-  }
-
-  return userId
-}
-
-function scrapeRunIdFromRoute(value: string) {
-  const scrapeRunId = Number(value)
-
-  return Number.isSafeInteger(scrapeRunId) && scrapeRunId > 0
-    ? scrapeRunId
-    : null
-}
-
-function notFoundResponse() {
-  return Response.json({ error: "Scrape run not found." }, { status: 404 })
-}
 
 function cancelledResponse(scrapeRunId: number) {
   return Response.json(
@@ -41,23 +25,23 @@ export async function POST(
   const session = await getCurrentSession()
 
   if (!session) {
-    return Response.json({ error: "Unauthorized." }, { status: 401 })
+    return unauthorizedResponse()
   }
 
   const { runId } = await params
-  const scrapeRunId = scrapeRunIdFromRoute(runId)
+  const scrapeRunId = positiveIntegerRouteId(runId)
 
   if (scrapeRunId === null) {
-    return notFoundResponse()
+    return scrapeRunNotFoundResponse()
   }
 
   const cancellation = await requestScrapeRunCancellation({
-    userId: numericUserId(session.user.id),
+    userId: numericSessionUserId(session.user.id),
     scrapeRunId,
   })
 
   if (cancellation.outcome === "not_found") {
-    return notFoundResponse()
+    return scrapeRunNotFoundResponse()
   }
 
   if (cancellation.outcome === "terminal_conflict") {
@@ -87,7 +71,7 @@ export async function POST(
   const completed = await completeScrapeRunCancellation({ scrapeRunId })
 
   if (!completed) {
-    return notFoundResponse()
+    return scrapeRunNotFoundResponse()
   }
 
   return cancelledResponse(scrapeRunId)

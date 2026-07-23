@@ -151,3 +151,17 @@ Notes for Phase 11:
 - The cancellation response intentionally contains only `{ id, status: "cancelled" }`; polling-oriented cancellation-request timestamps and full state remain the responsibility of the Phase 11 read models.
 - Cancellation needs no provider/deployment preflight. A run with no attached Workflow ID is cleaned up directly; this covers the accepted post-commit/pre-dispatch window as well as pending runs.
 - No migration or dependency change was needed, and there were no deviations from the Phase 10 plan.
+
+# Phase 11 handoff
+
+Implemented owner-scoped polling read models and all three read APIs.
+
+- Added `GET /api/scrape-runs`, `GET /api/scrape-runs/:runId`, and `GET /api/scrape-runs/:runId/scrape-jobs/:jobId`, with consistent authentication, positive route-ID validation, `404` ownership boundaries, and no pagination behavior.
+- Run lists use one grouped query for every owned run and all job-status aggregates. Run detail returns ordered immutable fields and stages, aggregate progress, and lightweight deterministic job summaries; PostgreSQL projects only the configured Primary Identifier from each successful JSONB result.
+- Full Extraction Results, missing-required diagnostics, and sanitized failure messages are limited to nested job detail. Nested lookup verifies the authenticated owner, route run ID, and job ID in one query.
+- Added route and database integration coverage for authentication, cross-user isolation, nested membership, aggregate counts, cancellation-request state, Primary Identifier projection, response privacy boundaries, newest-first ordering, and absence of hidden limits.
+
+Notes for Phase 12:
+
+- Read responses are backed entirely by PostgreSQL and do not consult Workflow state. No migration or dependency was required, and there were no deviations from the Phase 11 plan.
+- Shared route helpers now keep session user-ID and positive path-ID parsing consistent across create/list, detail, job detail, and cancellation handlers.

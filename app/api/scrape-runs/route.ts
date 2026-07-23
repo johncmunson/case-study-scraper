@@ -1,10 +1,15 @@
 import { getCurrentSession } from "@/auth/session"
+import {
+  numericSessionUserId,
+  unauthorizedResponse,
+} from "@/app/api/scrape-runs/_route-helpers"
 import { newScrapeRunSchema } from "@/lib/scrape-runs/new-scrape-run"
 import {
   DeploymentConfigurationError,
   validateDatabaseDeploymentConfiguration,
   validateScrapeRunDeploymentConfiguration,
 } from "@/lib/server/scrape-runs/deployment-configuration"
+import { listOwnedScrapeRunSummaries } from "@/lib/server/scrape-runs/read-repository"
 import { scrapeRunWorkflow } from "@/workflows/scrape-runs"
 import { start } from "workflow/api"
 
@@ -17,21 +22,25 @@ const EMPTY_JOB_COUNTS = {
   cancelled: 0,
 } as const
 
-function numericUserId(id: string | number) {
-  const userId = Number(id)
+export async function GET(_request: Request) {
+  const session = await getCurrentSession()
 
-  if (!Number.isSafeInteger(userId)) {
-    throw new Error("Expected the authenticated user id to be a numeric value.")
+  if (!session) {
+    return unauthorizedResponse()
   }
 
-  return userId
+  const runs = await listOwnedScrapeRunSummaries({
+    userId: numericSessionUserId(session.user.id),
+  })
+
+  return Response.json(runs)
 }
 
 export async function POST(request: Request) {
   const session = await getCurrentSession()
 
   if (!session) {
-    return Response.json({ error: "Unauthorized." }, { status: 401 })
+    return unauthorizedResponse()
   }
 
   let filteringModel: string
@@ -80,7 +89,7 @@ export async function POST(request: Request) {
 
   try {
     createdRun = await scrapeRunRepository.createScrapeRun({
-      userId: numericUserId(session.user.id),
+      userId: numericSessionUserId(session.user.id),
       configuration: {
         ...result.data,
         filteringModel,
