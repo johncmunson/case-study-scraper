@@ -198,8 +198,14 @@ describe("Scrape Run lifecycle overview", () => {
 
       renderDetail()
 
+      const runHeader = (
+        await screen.findByRole("heading", { name: "Customer stories" })
+      ).closest("section")
+      expect(runHeader).not.toBeNull()
       expect(
-        await screen.findByLabelText(`Status: ${expectedLabel}`),
+        within(runHeader as HTMLElement).getByLabelText(
+          `Status: ${expectedLabel}`,
+        ),
       ).toHaveTextContent(expectedLabel)
     },
   )
@@ -287,7 +293,7 @@ describe("Scrape Run lifecycle overview", () => {
       const value = term.nextElementSibling
       expect(value?.querySelector("time")).toHaveAttribute("datetime")
     }
-    expect(screen.getByText("No scrape jobs created")).toBeInTheDocument()
+    expect(screen.getAllByText("No scrape jobs created")).toHaveLength(2)
   })
 
   it("shows every Stage state distinctly with attempts, timestamps, and failure details", async () => {
@@ -340,6 +346,42 @@ describe("Scrape Run lifecycle overview", () => {
   })
 })
 
+describe("Scrape Job summaries integration", () => {
+  it("uses the Run-detail summaries without requesting individual job detail", async () => {
+    let runDetailRequests = 0
+    let jobDetailRequests = 0
+    server.use(
+      http.get(apiUrl, () => {
+        runDetailRequests += 1
+        return HttpResponse.json(
+          detail({
+            status: "complete",
+            finishedAt: "2026-04-01T10:10:00.000Z",
+          }),
+        )
+      }),
+      http.get(
+        "http://localhost/api/scrape-runs/17/scrape-jobs/:jobId",
+        () => {
+          jobDetailRequests += 1
+          return HttpResponse.json({})
+        },
+      ),
+    )
+
+    renderDetail()
+
+    const table = await screen.findByRole("table", { name: "Scrape Jobs" })
+    expect(within(table).getByRole("link", { name: "Acme" })).toHaveAttribute(
+      "href",
+      "/app/scrape-runs/17/scrape-jobs/31",
+    )
+    await delay(25)
+    expect(runDetailRequests).toBe(1)
+    expect(jobDetailRequests).toBe(0)
+  })
+})
+
 describe("Scrape Run Configuration", () => {
   it("starts collapsed, expands locally, and omits implementation-facing values", async () => {
     let requestCount = 0
@@ -367,10 +409,13 @@ describe("Scrape Run Configuration", () => {
     )
     expect(screen.getByRole("heading", { name: "Example Pages" })).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Extraction Fields" })).toBeInTheDocument()
-    expect(screen.getByText("Client Name")).toBeInTheDocument()
-    expect(screen.getByText("The customer industry")).toBeInTheDocument()
-    expect(screen.getByText("Required")).toBeInTheDocument()
-    expect(screen.getByText("Primary Identifier")).toBeInTheDocument()
+    const extractionFields = screen.getByRole("region", {
+      name: "Extraction Fields",
+    })
+    expect(within(extractionFields).getByText("Client Name")).toBeInTheDocument()
+    expect(within(extractionFields).getByText("The customer industry")).toBeInTheDocument()
+    expect(within(extractionFields).getByText("Required")).toBeInTheDocument()
+    expect(within(extractionFields).getByText("Primary Identifier")).toBeInTheDocument()
     expect(screen.queryByText("client_name")).not.toBeInTheDocument()
     expect(screen.queryByText(validScrapeRunDetail.filteringModel)).not.toBeInTheDocument()
     expect(requestCount).toBe(1)

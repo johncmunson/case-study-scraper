@@ -25,3 +25,16 @@ Phase 2 was completed as planned.
 - No direct `useEffect`, server-only client import, job table interaction, or cancellation behavior was introduced. Phase 3 can insert the Scrape Job browser between the existing Stage and Configuration sections.
 
 Verification completed with `pnpm typecheck`, `pnpm lint`, and `pnpm test` (376 tests passing). `pnpm build` compiled and typechecked successfully but could not finish page-data collection because the local environment lacks `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`; this was unrelated to the Phase 2 code.
+
+## Phase 3 — Paginated Scrape Job summaries and navigation
+
+Phase 3 was completed as planned.
+
+- The Run detail workspace now includes a responsive lightweight Scrape Job table between Run Stages and Run Configuration. It uses the configured Primary Identifier Field Label, shows identifier values only for successful jobs, and presents Canonical Page URLs, textual status/failure code, attempts, and terminal finish times without requesting individual job detail.
+- The browser has exact local status filtering with live counts, fixed 25-row pagination, visible ranges, filter-driven page reset, and render-time page clamping when polling shrinks a filtered collection. Preparation, terminal zero-job, and no-filter-match states are distinct.
+- Primary Identifier and Page URL links target the future nested job route with prefetch disabled. Existing Run Summary cards are now full semantic Next.js Links with the prior content, progress behavior, and focus/hover treatment preserved.
+- Focused tests cover responsive column priority, dynamic labels and values, failure diagnostics, stable filtering/pagination, polling-driven clamping, empty states, disabled job-link prefetch, the no-per-job-request boundary, and Run-list navigation.
+
+The only implementation wrinkle was that adding job status badges and the Primary Identifier heading introduced intentional duplicate labels in a few Phase 2 integration tests; those assertions were scoped to the Run header or Configuration section rather than changing user-facing copy. No product-scope deviations were needed.
+
+Verification completed with `pnpm typecheck`, `pnpm lint`, and `pnpm test` (384 tests passing). Phase 4 can add cancellation without changing the job browser's local state or data boundary.

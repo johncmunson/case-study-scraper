@@ -4,6 +4,7 @@ import { CircleAlertIcon } from "lucide-react"
 import Link from "next/link"
 import useSWR from "swr"
 
+import { ScrapeJobSummaryTable } from "@/components/scrape-runs/scrape-job-summary-table"
 import { ScrapeRunConfiguration } from "@/components/scrape-runs/scrape-run-configuration"
 import { ScrapeRunDetailHeader } from "@/components/scrape-runs/scrape-run-detail-header"
 import { ScrapeRunDetailSkeleton } from "@/components/scrape-runs/scrape-run-detail-skeleton"
@@ -157,6 +158,7 @@ export function ScrapeRunDetailView({ runId }: { runId: string }) {
       {error && <RefreshWarning onRetry={retry} />}
       <ScrapeRunOverview run={data} />
       <ScrapeRunStageList stages={data.stages} />
+      <ScrapeJobSummaryTable run={data} />
       <ScrapeRunConfiguration run={data} />
     </div>
   )

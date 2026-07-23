@@ -207,6 +207,29 @@ describe("Scrape Run list states", () => {
     ).not.toBeInTheDocument()
   })
 
+  it("links every Run Summary item to its detail workspace", () => {
+    const runs = [
+      summary({ id: 17, name: "Customer stories" }),
+      summary({ id: 29, name: "Partner profiles" }),
+    ]
+
+    renderWithSwr(
+      <ScrapeRunList summaries={runs} error={undefined} onRetry={vi.fn()} />,
+    )
+
+    expect(screen.getByRole("link", { name: /Customer stories/ })).toHaveAttribute(
+      "href",
+      "/app/scrape-runs/17",
+    )
+    expect(screen.getByRole("link", { name: /Partner profiles/ })).toHaveAttribute(
+      "href",
+      "/app/scrape-runs/29",
+    )
+    expect(getRunItem("Customer stories")).toContainElement(
+      screen.getByRole("link", { name: /Customer stories/ }),
+    )
+  })
+
   it("keeps long content understandable in a constrained list item", () => {
     const longName = "Quarterly international customer success stories ".repeat(2).trim()
     const longHostname = `${"customer-stories-".repeat(3)}archive.example.com`
