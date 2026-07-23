@@ -16,8 +16,16 @@ const apiUrl = "http://localhost/api/scrape-runs"
 
 afterEach(() => {
   toast.dismiss()
-  vi.useRealTimers()
 })
+
+function createDeferred() {
+  let resolve!: () => void
+  const promise = new Promise<void>((resolvePromise) => {
+    resolve = resolvePromise
+  })
+
+  return { promise, resolve }
+}
 
 function summary(
   replacement: Partial<ScrapeRunSummary> = {},
@@ -88,6 +96,30 @@ async function openAndFillForm() {
 }
 
 describe("Scrape Run creation", () => {
+  it("opens and closes the dialog from the keyboard while returning focus", async () => {
+    server.use(http.get(apiUrl, () => HttpResponse.json([])))
+
+    renderView()
+    await screen.findByText("No scrape runs yet")
+
+    const user = userEvent.setup()
+    const trigger = screen.getByRole("button", {
+      name: "Create New Scrape Run",
+    })
+
+    await user.tab()
+    expect(trigger).toHaveFocus()
+    await user.keyboard("{Enter}")
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument()
+    expect(screen.getByLabelText("Name")).toHaveFocus()
+
+    await user.keyboard("{Escape}")
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+    expect(trigger).toHaveFocus()
+  })
+
   it.each([
     ["pending", summary({ status: "pending" })],
     ["in-progress", summary({ status: "in_progress" })],
@@ -111,13 +143,14 @@ describe("Scrape Run creation", () => {
       expect(trigger).toBeDisabled()
       const tooltipTarget = trigger.parentElement
       expect(tooltipTarget).toHaveAttribute("tabindex", "0")
+      expect(tooltipTarget).toHaveAccessibleName("Create New Scrape Run")
 
       const user = userEvent.setup()
       await user.tab()
       expect(tooltipTarget).toHaveFocus()
-      expect(
-        await screen.findByText("Only one Scrape Run may be active at a time."),
-      ).toBeInTheDocument()
+      expect(await screen.findByRole("tooltip")).toHaveTextContent(
+        "Only one Scrape Run may be active at a time.",
+      )
 
       fireEvent.click(trigger)
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
@@ -140,9 +173,9 @@ describe("Scrape Run creation", () => {
 
     window.dispatchEvent(new Event("online"))
 
-    expect(
-      await screen.findByText(/Another Scrape Run is active/),
-    ).toBeInTheDocument()
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      /Another Scrape Run is active/,
+    )
     expect(screen.getByRole("dialog")).toBeInTheDocument()
     expect(screen.getByLabelText("Name")).toHaveValue("New customer stories")
     expect(
@@ -271,9 +304,9 @@ describe("Scrape Run creation", () => {
     await user.click(screen.getByRole("button", { name: "Create Scrape Run" }))
 
     expect(await screen.findByText("Error: Another run is active.")).toBeInTheDocument()
-    expect(
-      await screen.findByText(/Another Scrape Run is active/),
-    ).toBeInTheDocument()
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      /Another Scrape Run is active/,
+    )
     expect(screen.getByRole("dialog")).toBeInTheDocument()
     expect(screen.getByLabelText("Name")).toHaveValue("New customer stories")
     expect(
@@ -355,6 +388,77 @@ describe("Scrape Run creation", () => {
       screen.queryByRole("list", { name: "Scrape runs", hidden: true }),
     ).not.toBeInTheDocument()
     expect(getCount).toBe(1)
+  })
+
+  it("keeps a created run when the initial list request resolves with stale data", async () => {
+    const initialGet = createDeferred()
+
+    server.use(
+      http.get(apiUrl, async () => {
+        await initialGet.promise
+        return HttpResponse.json([])
+      }),
+      http.post(apiUrl, () =>
+        HttpResponse.json(createdSummary, { status: 201 }),
+      ),
+    )
+
+    renderView()
+    const user = await openAndFillForm()
+    await user.click(screen.getByRole("button", { name: "Create Scrape Run" }))
+
+    expect(
+      await screen.findByRole("heading", { name: "New customer stories" }),
+    ).toBeInTheDocument()
+
+    initialGet.resolve()
+    await delay(25)
+
+    expect(
+      screen.getByRole("heading", { name: "New customer stories" }),
+    ).toBeInTheDocument()
+  })
+
+  it("keeps a created run when an older revalidation finishes after the mutation", async () => {
+    let getCount = 0
+    const revalidationStarted = createDeferred()
+    const revalidationResponse = createDeferred()
+
+    server.use(
+      http.get(apiUrl, async () => {
+        getCount += 1
+        if (getCount === 1) {
+          return HttpResponse.json([])
+        }
+
+        revalidationStarted.resolve()
+        await revalidationResponse.promise
+        return HttpResponse.json([])
+      }),
+      http.post(apiUrl, () =>
+        HttpResponse.json(createdSummary, { status: 201 }),
+      ),
+    )
+
+    renderView()
+    await screen.findByText("No scrape runs yet")
+    const user = await openAndFillForm()
+
+    window.dispatchEvent(new Event("online"))
+    await revalidationStarted.promise
+    await user.click(screen.getByRole("button", { name: "Create Scrape Run" }))
+
+    expect(
+      await screen.findByRole("heading", { name: "New customer stories" }),
+    ).toBeInTheDocument()
+
+    revalidationResponse.resolve()
+    await delay(25)
+
+    expect(
+      screen.getByRole("heading", { name: "New customer stories" }),
+    ).toBeInTheDocument()
+    expect(getCount).toBe(2)
   })
 
   it("polls after cache insertion and resets the form after the run becomes terminal", async () => {
@@ -440,7 +544,16 @@ describe("Scrape Run creation", () => {
     ).toBeInTheDocument()
 
     const user = await openAndFillForm()
-    await user.click(screen.getByRole("button", { name: "Create Scrape Run" }))
+    const createTrigger = screen.getByRole("button", {
+      name: "Create New Scrape Run",
+      hidden: true,
+    })
+    const unavailableCreateControl = createTrigger.parentElement
+    const submitButton = screen.getByRole("button", {
+      name: "Create Scrape Run",
+    })
+    submitButton.focus()
+    await user.keyboard("{Enter}")
 
     expect(postedBody).toEqual({
       name: "New customer stories",
@@ -466,6 +579,7 @@ describe("Scrape Run creation", () => {
     ).not.toBeInTheDocument()
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
     expect(await screen.findByText("New scrape run created")).toBeInTheDocument()
+    expect(unavailableCreateControl).toHaveFocus()
 
     await delay(50)
     expect(getCount).toBe(1)

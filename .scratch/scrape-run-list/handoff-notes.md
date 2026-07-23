@@ -30,3 +30,14 @@ Verification completed: `pnpm test` (all 21 files and 258 tests, including unit,
 - No plan deviations. Two small test-environment/control details surfaced: Sonner requires a jsdom `matchMedia` shim, and native fieldset disabling does not propagate to Base UI’s span-based radios, so the radio group is disabled explicitly during mutation.
 
 Verification completed: `pnpm test` (all 22 files and 270 tests, including unit, frontend, integration, and Workflow projects), `pnpm typecheck`, and `pnpm lint`.
+
+# Phase 4 handoff
+
+- Hardened accessibility with named status and creation-time output, a live status for cross-tab Active Scrape Run discovery, an explicitly identified tooltip, and reliable focus restoration to the keyboard-focusable unavailable create control after successful creation.
+- Added reduced-motion treatment for spinners, progress transitions, and loading toasts; list items now explicitly contain long content without horizontal overflow. Locale timestamps retain browser formatting while suppressing expected server/client locale hydration differences.
+- Expanded integration coverage for keyboard operation, long content, initial-fetch and revalidation mutation races, polling/retry coordination, terminal and unmount timer cleanup, and the absence of list-error toast spam. Frontend setup now restores real timers centrally after every test.
+- Manual `agent-browser` checks covered 320 px and 1280 px layouts, long names and hostnames, keyboard tooltip positioning, dialog scrolling and focus return, active-to-terminal polling, and request-loop shutdown. No horizontal overflow or browser errors were observed.
+- The main unexpected findings were that the focusable disabled-trigger wrapper had no accessible name, the shared tooltip popup lacked an explicit `tooltip` role, and dialog focus initially returned to a newly disabled button after successful creation. These were corrected without adding effects or changing product scope.
+- No plan deviations or backend changes.
+
+Verification completed: `pnpm test` (all 22 files and 278 tests, including unit, frontend, integration, and Workflow projects), `pnpm typecheck`, and `pnpm lint`.

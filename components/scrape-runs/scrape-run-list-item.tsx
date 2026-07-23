@@ -37,6 +37,7 @@ function getStatusBadgeVariant(run: ScrapeRunSummary): BadgeVariant {
 export function ScrapeRunListItem({ run }: { run: ScrapeRunSummary }) {
   const hostname = getTargetSiteHostname(run.targetUrl)
   const statusLabel = getScrapeRunStatusLabel(run)
+  const formattedCreatedAt = formatScrapeRunCreatedAt(run.createdAt)
   const hasActiveJobProgress =
     isActiveScrapeRun(run) && run.jobCounts.total > 0
   const showSpinner =
@@ -46,7 +47,7 @@ export function ScrapeRunListItem({ run }: { run: ScrapeRunSummary }) {
     <Item
       role="listitem"
       variant="outline"
-      className="min-w-0 items-start gap-4 p-4 sm:flex-nowrap"
+      className="min-w-0 items-start gap-4 overflow-hidden p-4 sm:flex-nowrap"
     >
       <ItemContent className="min-w-0 gap-3">
         <div className="flex min-w-0 items-start justify-between gap-3">
@@ -61,7 +62,10 @@ export function ScrapeRunListItem({ run }: { run: ScrapeRunSummary }) {
             </ItemDescription>
           </div>
 
-          <Badge variant={getStatusBadgeVariant(run)}>
+          <Badge
+            aria-label={`Status: ${statusLabel}`}
+            variant={getStatusBadgeVariant(run)}
+          >
             {showSpinner && <Spinner aria-hidden="true" />}
             {statusLabel}
           </Badge>
@@ -71,10 +75,12 @@ export function ScrapeRunListItem({ run }: { run: ScrapeRunSummary }) {
           <div className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-4">
             <p>{getScrapeRunJobSummary(run)}</p>
             <time
+              aria-label={`Created ${formattedCreatedAt}`}
               className="shrink-0 text-xs text-muted-foreground"
               dateTime={run.createdAt}
+              suppressHydrationWarning
             >
-              {formatScrapeRunCreatedAt(run.createdAt)}
+              {formattedCreatedAt}
             </time>
           </div>
 

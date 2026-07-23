@@ -380,7 +380,10 @@ function NewScrapeRunForm({
 
         <DialogFooter>
           {hasActiveRun && (
-            <p className="mr-auto self-center text-sm text-muted-foreground">
+            <p
+              className="mr-auto self-center text-sm text-muted-foreground"
+              role="status"
+            >
               Another Scrape Run is active. Wait for it to finish before
               creating a new one.
             </p>
@@ -406,6 +409,7 @@ export function NewScrapeRunDialog({
   isMutating,
   onCreate,
 }: NewScrapeRunDialogProps) {
+  const unavailableCreateControlRef = useRef<HTMLSpanElement>(null)
   const [open, setOpen] = useState(false)
 
   return (
@@ -426,6 +430,8 @@ export function NewScrapeRunDialog({
           disabled={!hasActiveRun}
           render={
             <span
+              ref={unavailableCreateControlRef}
+              aria-label={hasActiveRun ? "Create New Scrape Run" : undefined}
               className="inline-flex"
               tabIndex={hasActiveRun ? 0 : -1}
             />
@@ -446,6 +452,7 @@ export function NewScrapeRunDialog({
         <DialogContent
           className="max-h-[calc(100svh-2rem)] grid-rows-[auto_minmax(0,1fr)] sm:max-w-2xl"
           closeButtonDisabled={isMutating}
+          finalFocus={hasActiveRun ? unavailableCreateControlRef : true}
         >
           <DialogHeader>
             <DialogTitle>New Scrape Run</DialogTitle>

@@ -1,10 +1,11 @@
 import { act, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { http, HttpResponse, delay } from "msw"
-import { afterEach, describe, expect, it, vi } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 
 import { ScrapeRunList } from "@/components/scrape-runs/scrape-run-list"
 import { ScrapeRunsView } from "@/components/scrape-runs/scrape-runs-view"
+import { Toaster } from "@/components/ui/sonner"
 import type { ScrapeRunSummary } from "@/lib/scrape-runs/api-contracts"
 import { renderWithSwr } from "@/tests/frontend/render"
 import { validScrapeRunSummary } from "@/tests/frontend/scrape-run-fixtures"
@@ -28,10 +29,6 @@ function summary(
 function getRunItem(name: string) {
   return screen.getByRole("heading", { name }).closest('[role="listitem"]')
 }
-
-afterEach(() => {
-  vi.useRealTimers()
-})
 
 describe("Scrape Run list states", () => {
   it("keeps creation available while the initial list renders three skeletons", () => {
@@ -169,22 +166,35 @@ describe("Scrape Run list states", () => {
       const item = getRunItem(name)
       expect(item).not.toBeNull()
       const itemQueries = within(item as HTMLElement)
-      const badge = itemQueries.getByText(status)
+      const badge = itemQueries.getByLabelText(`Status: ${status}`)
       expect(badge).toHaveAttribute("data-variant", badgeVariant)
+      expect(badge).toHaveTextContent(status)
       expect(itemQueries.getByText(jobSummary)).toBeInTheDocument()
       expect(itemQueries.getByText("www.example.com")).toBeInTheDocument()
       const createdAt = item?.querySelector("time")
       expect(createdAt).toHaveAttribute("datetime", validScrapeRunSummary.createdAt)
       expect(createdAt).not.toHaveTextContent(/^\s*$/)
+      expect(createdAt).toHaveAccessibleName(
+        `Created ${createdAt?.textContent}`,
+      )
     }
 
-    expect(container.querySelectorAll('[data-slot="spinner"][aria-hidden="true"]')).toHaveLength(2)
+    const statusSpinners = container.querySelectorAll(
+      '[data-slot="spinner"][aria-hidden="true"]',
+    )
+    expect(statusSpinners).toHaveLength(2)
+    for (const spinner of statusSpinners) {
+      expect(spinner).toHaveClass("motion-reduce:animate-none")
+    }
     expect(screen.queryByText(validScrapeRunSummary.targetUrl)).not.toBeInTheDocument()
 
     const progress = screen.getByRole("progressbar", {
       name: "Scrape Job progress for Partial active",
     })
     expect(progress).toHaveAttribute("aria-valuenow", "50")
+    expect(
+      progress.querySelector('[data-slot="progress-indicator"]'),
+    ).toHaveClass("motion-reduce:transition-none")
     expect(
       within(getRunItem("Pending preparation") as HTMLElement).queryByRole(
         "progressbar",
@@ -195,6 +205,37 @@ describe("Scrape Run list states", () => {
         "progressbar",
       ),
     ).not.toBeInTheDocument()
+  })
+
+  it("keeps long content understandable in a constrained list item", () => {
+    const longName = "Quarterly international customer success stories ".repeat(2).trim()
+    const longHostname = `${"customer-stories-".repeat(3)}archive.example.com`
+    const longRun = summary({
+      name: longName,
+      targetUrl: `https://${longHostname}/`,
+      status: "complete",
+      finishedAt: "2026-04-01T10:10:00.000Z",
+    })
+
+    renderWithSwr(
+      <div style={{ width: 280 }}>
+        <ScrapeRunList
+          summaries={[longRun]}
+          error={undefined}
+          onRetry={vi.fn()}
+        />
+      </div>,
+    )
+
+    const item = getRunItem(longName)
+    expect(item).toHaveClass("overflow-hidden")
+    expect(screen.getByRole("heading", { name: longName })).toHaveAttribute(
+      "title",
+      longName,
+    )
+    expect(screen.getByText(longHostname)).toHaveAttribute("title", longHostname)
+    expect(screen.getByLabelText("Status: Complete")).toBeInTheDocument()
+    expect(item?.querySelector("time")).toHaveAccessibleName(/^Created /)
   })
 
   it("renders an initial error and lets the user retry without automatically retrying a 4xx", async () => {
@@ -218,7 +259,9 @@ describe("Scrape Run list states", () => {
     expect(requestCount).toBe(1)
 
     shouldSucceed = true
-    await userEvent.click(screen.getByRole("button", { name: "Retry" }))
+    const retryButton = screen.getByRole("button", { name: "Retry" })
+    retryButton.focus()
+    await userEvent.keyboard("{Enter}")
 
     expect(await screen.findByText("No scrape runs yet")).toBeInTheDocument()
     expect(requestCount).toBe(2)
@@ -294,6 +337,141 @@ describe("Scrape Run list request scheduling", () => {
       expect(requestCount).toBe(4)
     },
   )
+
+  it("cleans up active polling when the view unmounts", async () => {
+    vi.useFakeTimers()
+    let requestCount = 0
+    server.use(
+      http.get(apiUrl, () => {
+        requestCount += 1
+        return HttpResponse.json([summary({ status: "in_progress" })])
+      }),
+    )
+
+    const { unmount } = renderWithSwr(<ScrapeRunsView />)
+
+    await vi.waitFor(() => {
+      expect(screen.getByText("In progress")).toBeInTheDocument()
+    })
+    expect(requestCount).toBe(1)
+
+    unmount()
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(9_000)
+    })
+
+    expect(requestCount).toBe(1)
+  })
+
+  it("cleans up a pending error retry when the view unmounts", async () => {
+    vi.useFakeTimers()
+    let requestCount = 0
+    server.use(
+      http.get(apiUrl, () => {
+        requestCount += 1
+        return HttpResponse.json({ error: "Unavailable." }, { status: 500 })
+      }),
+    )
+
+    const { unmount } = renderWithSwr(<ScrapeRunsView />, undefined, {
+      errorRetryInterval: 1_000,
+    })
+
+    await vi.waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "Unable to load scrape runs",
+      )
+    })
+    expect(requestCount).toBe(1)
+
+    unmount()
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10_000)
+    })
+
+    expect(requestCount).toBe(1)
+  })
+
+  it("suspends polling during a retry and resumes from a successful active response", async () => {
+    vi.useFakeTimers()
+    vi.spyOn(Math, "random").mockReturnValue(0)
+    let requestCount = 0
+    server.use(
+      http.get(apiUrl, () => {
+        requestCount += 1
+
+        if (requestCount === 2) {
+          return HttpResponse.json({ error: "Unavailable." }, { status: 500 })
+        }
+
+        return HttpResponse.json([
+          requestCount < 4
+            ? summary({ status: "in_progress" })
+            : summary({
+                status: "complete",
+                finishedAt: "2026-04-01T10:10:00.000Z",
+              }),
+        ])
+      }),
+    )
+
+    renderWithSwr(<ScrapeRunsView />, undefined, {
+      errorRetryInterval: 10_000,
+    })
+
+    await vi.waitFor(() => {
+      expect(screen.getByText("In progress")).toBeInTheDocument()
+    })
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3_000)
+    })
+    await vi.waitFor(() => expect(requestCount).toBe(2))
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3_001)
+    })
+    expect(requestCount).toBe(2)
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(6_999)
+    })
+    await vi.waitFor(() => expect(requestCount).toBe(3))
+    expect(screen.getByText("In progress")).toBeInTheDocument()
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3_000)
+    })
+    await vi.waitFor(() => {
+      expect(screen.getByText("Complete")).toBeInTheDocument()
+    })
+    expect(requestCount).toBe(4)
+  })
+
+  it("does not emit toasts after repeated list failures", async () => {
+    let requestCount = 0
+    server.use(
+      http.get(apiUrl, () => {
+        requestCount += 1
+        return HttpResponse.json({ error: "Unavailable." }, { status: 500 })
+      }),
+    )
+
+    const { container } = renderWithSwr(
+      <>
+        <ScrapeRunsView />
+        <Toaster />
+      </>,
+      undefined,
+      { errorRetryInterval: 1 },
+    )
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Unable to load scrape runs",
+    )
+    await waitFor(() => expect(requestCount).toBe(4))
+    expect(container.querySelectorAll("[data-sonner-toast]")).toHaveLength(0)
+  })
 
   it("polls while a run is active and stops after a terminal response", async () => {
     vi.useFakeTimers()
