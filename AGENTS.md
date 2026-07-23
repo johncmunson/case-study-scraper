@@ -10,6 +10,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - If you need to use python for any reason, the command is `python3`
 - Just because a reviewer subagent makes a recommendation does not mean you need to act upon it if it would result in scope creep, premature optimization, or over-engineering
 - Never run prettier. Leave this task to the user.
+- When gathering context or performing open-ended investigations, the use of (possibly parallel) scout and/or researcher subagents is encouraged.
 - Keep repository investigation targeted: locate candidate files first, then read only the exact version-matched docs or source files needed.
 - Do not run broad recursive searches across `node_modules`, generated bundles, source maps, or minified output. Restrict searches with file globs/exclusions and use `rg --files-with-matches` before inspecting content.
 - Remember that `head` limits line count, not line length; use bounded file reads or scoped source searches to avoid large low-signal tool output.
