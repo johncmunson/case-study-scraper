@@ -2,6 +2,7 @@ import { z } from "zod"
 
 import { scrapeRunStatusSchema } from "@/lib/scrape-runs/contracts"
 import type { NewScrapeRunInput } from "@/lib/scrape-runs/new-scrape-run"
+import { isPublicDnsHostname } from "@/lib/scrape-runs/public-hostname"
 
 export const SCRAPE_RUNS_API_PATH = "/api/scrape-runs"
 
@@ -21,9 +22,10 @@ const normalizedTargetUrlSchema = z
       (url.protocol === "http:" || url.protocol === "https:") &&
       url.username === "" &&
       url.password === "" &&
+      isPublicDnsHostname(url.hostname) &&
       value === `${url.origin}/`
     )
-  }, "Must be a normalized HTTP or HTTPS Target Site URL.")
+  }, "Must be a normalized HTTP or HTTPS target origin URL.")
 
 const isoDateTimeSchema = z.iso.datetime({ offset: true })
 const nullableIsoDateTimeSchema = isoDateTimeSchema.nullable()
@@ -58,7 +60,7 @@ export const scrapeRunSummaryListSchema = z.array(scrapeRunSummarySchema)
 
 export const scrapeRunApiErrorResponseSchema = z
   .object({
-    error: z.string().min(1),
+    error: z.string().min(1).refine((message) => message.trim().length > 0),
     scrapeRunId: z.number().int().positive().optional(),
   })
   .strip()
@@ -132,6 +134,12 @@ async function fetchResponse(
   }
 }
 
+function invalidResponseError(response: Response) {
+  return new ScrapeRunApiError("The server returned an invalid response.", {
+    status: response.status,
+  })
+}
+
 async function validatedResponse<T>(
   response: Response,
   schema: z.ZodType<T>,
@@ -141,17 +149,13 @@ async function validatedResponse<T>(
   try {
     body = await readUnknownJson(response)
   } catch {
-    throw new ScrapeRunApiError("The server returned an invalid response.", {
-      status: response.status,
-    })
+    throw invalidResponseError(response)
   }
 
   const result = schema.safeParse(body)
 
   if (!result.success) {
-    throw new ScrapeRunApiError("The server returned an invalid response.", {
-      status: response.status,
-    })
+    throw invalidResponseError(response)
   }
 
   return result.data
@@ -196,9 +200,7 @@ export async function createScrapeRun(
   }
 
   if (response.status !== 201) {
-    throw new ScrapeRunApiError("The server returned an invalid response.", {
-      status: response.status,
-    })
+    throw invalidResponseError(response)
   }
 
   return validatedResponse(response, scrapeRunSummarySchema)

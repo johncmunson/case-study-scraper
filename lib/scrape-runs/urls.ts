@@ -1,4 +1,6 @@
-import { isIP } from "node:net"
+import { isPublicDnsHostname } from "@/lib/scrape-runs/public-hostname"
+
+export { isPublicDnsHostname } from "@/lib/scrape-runs/public-hostname"
 
 export const MAX_SUBMITTED_URL_LENGTH = 2_048
 
@@ -8,23 +10,6 @@ export const URL_NORMALIZATION_ERROR_MESSAGES = {
   credentials: "URLs must not include credentials.",
   nonPublicHostname: "URLs must use a public DNS hostname.",
 } as const
-
-const NON_PUBLIC_HOSTNAME_SUFFIXES = [
-  "localhost",
-  "local",
-  "internal",
-  "intranet",
-  "lan",
-  "home",
-  "corp",
-  "localdomain",
-  "home.arpa",
-  "test",
-  "invalid",
-  "example",
-  "onion",
-  "alt",
-] as const
 
 export type UrlNormalizationError =
   keyof typeof URL_NORMALIZATION_ERROR_MESSAGES
@@ -53,44 +38,6 @@ function failure(error: UrlNormalizationError): UrlNormalizationFailure {
 
 function normalizeHostname(hostname: string) {
   return hostname.toLowerCase().replace(/\.$/, "")
-}
-
-export function isPublicDnsHostname(hostname: string) {
-  const normalizedHostname = normalizeHostname(hostname).replace(
-    /^\[(.*)\]$/,
-    "$1",
-  )
-
-  if (isIP(normalizedHostname) !== 0) {
-    return false
-  }
-
-  if (
-    normalizedHostname.length === 0 ||
-    normalizedHostname.length > 253 ||
-    !normalizedHostname.includes(".")
-  ) {
-    return false
-  }
-
-  const labels = normalizedHostname.split(".")
-
-  if (
-    labels.some(
-      (label) =>
-        label.length === 0 ||
-        label.length > 63 ||
-        !/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i.test(label),
-    )
-  ) {
-    return false
-  }
-
-  return !NON_PUBLIC_HOSTNAME_SUFFIXES.some(
-    (suffix) =>
-      normalizedHostname === suffix ||
-      normalizedHostname.endsWith(`.${suffix}`),
-  )
 }
 
 function parseSubmittedUrl(
