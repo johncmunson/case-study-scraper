@@ -1,6 +1,12 @@
 import { FatalError, getWorkflowMetadata, RetryableError } from "workflow"
 
 import {
+  admitScrapeBatchStep,
+  failScrapeJobStep,
+  finalizeScrapingStep,
+  processScrapeJobStep,
+} from "./scraping-steps"
+import {
   claimScrapeRunStep,
   failRunPreparationStep,
   filterMatchingPagesStep,
@@ -18,7 +24,7 @@ export type ScrapeRunWorkflowResult =
       scrapeRunId: number
     }>
   | Readonly<{
-      outcome: "preparation_complete"
+      outcome: "complete" | "failed" | "cancelled"
       scrapeRunId: number
       jobCount: number
     }>
@@ -88,9 +94,9 @@ export async function scrapeRunWorkflow(
       return { outcome: "stopped", scrapeRunId }
     }
 
-    let jobCount: number | null
+    let jobs
     try {
-      jobCount = await persistScrapeJobsStep(
+      jobs = await persistScrapeJobsStep(
         scrapeRunId,
         filtering.canonicalPageUrls,
       )
@@ -105,11 +111,46 @@ export async function scrapeRunWorkflow(
       }
     }
 
-    if (jobCount === null) {
+    if (jobs === null) {
       return { outcome: "stopped", scrapeRunId }
     }
 
-    return { outcome: "preparation_complete", scrapeRunId, jobCount }
+    for (let offset = 0; offset < jobs.length; offset += 5) {
+      if (!(await admitScrapeBatchStep(scrapeRunId))) {
+        break
+      }
+
+      const batch = jobs.slice(offset, offset + 5)
+      const settled = await Promise.allSettled(
+        batch.map((job) => processScrapeJobStep(run, job)),
+      )
+
+      for (let index = 0; index < settled.length; index += 1) {
+        const result = settled[index]
+
+        if (result.status === "fulfilled") {
+          continue
+        }
+
+        if (!isClassifiedProviderFailure(result.reason)) {
+          throw result.reason
+        }
+
+        await failScrapeJobStep(scrapeRunId, batch[index].id)
+      }
+    }
+
+    const outcome = await finalizeScrapingStep(scrapeRunId)
+
+    if (
+      outcome !== "complete" &&
+      outcome !== "failed" &&
+      outcome !== "cancelled"
+    ) {
+      return { outcome: "stopped", scrapeRunId }
+    }
+
+    return { outcome, scrapeRunId, jobCount: jobs.length }
   } catch (error) {
     await handleUnexpectedWorkflowFailureStep(scrapeRunId)
     throw error

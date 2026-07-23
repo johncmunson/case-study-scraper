@@ -1,8 +1,8 @@
 import { gateway } from "ai"
 
 import {
-  createScrapeJobsAndStartScraping,
   completeMappingAndStartFiltering,
+  createScrapeJobsAndStartScraping,
   failPreparationStage,
   handleUnexpectedWorkflowFailure,
   recordStageAttempt,
@@ -10,13 +10,21 @@ import {
 import { mapTargetSite } from "@/lib/server/scrape-runs/providers/firecrawl-map"
 import { selectMatchingPageUrls } from "@/lib/server/scrape-runs/providers/url-filtering"
 import { claimScrapeRun } from "@/lib/server/scrape-runs/repository"
-import type { ScrapeRunErrorCode } from "@/lib/scrape-runs/contracts"
+import type {
+  RunConfigurationField,
+  ScrapeRunErrorCode,
+} from "@/lib/scrape-runs/contracts"
 
-export type ClaimedPreparationRun = Readonly<{
+export type ClaimedScrapeRun = Readonly<{
   scrapeRunId: number
   targetUrl: string
   exampleUrls: string[]
   filteringModel: string
+  fields: RunConfigurationField[]
+}>
+
+export type PersistedScrapeJob = Readonly<{
+  id: number
 }>
 
 export type MappingStepResult =
@@ -30,7 +38,7 @@ export type FilteringStepResult =
 export async function claimScrapeRunStep(
   scrapeRunId: number,
   workflowRunId: string,
-): Promise<ClaimedPreparationRun | null> {
+): Promise<ClaimedScrapeRun | null> {
   "use step"
 
   const claimed = await claimScrapeRun({ scrapeRunId, workflowRunId })
@@ -44,11 +52,18 @@ export async function claimScrapeRunStep(
     targetUrl: claimed.targetUrl,
     exampleUrls: [...claimed.exampleUrls],
     filteringModel: claimed.filteringModel,
+    fields: claimed.fields.map((field) => ({
+      label: field.label,
+      key: field.key,
+      description: field.description,
+      required: field.required,
+      primaryIdentifier: field.primaryIdentifier,
+    })),
   }
 }
 
 export async function mapTargetSiteStep(
-  run: ClaimedPreparationRun,
+  run: ClaimedScrapeRun,
 ): Promise<MappingStepResult> {
   "use step"
 
@@ -77,7 +92,7 @@ export async function startFilteringStep(scrapeRunId: number) {
 }
 
 export async function filterMatchingPagesStep(
-  run: ClaimedPreparationRun,
+  run: ClaimedScrapeRun,
   siteUrls: string[],
 ): Promise<FilteringStepResult> {
   "use step"
@@ -105,7 +120,7 @@ filterMatchingPagesStep.maxRetries = 2
 export async function persistScrapeJobsStep(
   scrapeRunId: number,
   canonicalPageUrls: string[],
-) {
+): Promise<PersistedScrapeJob[] | null> {
   "use step"
 
   const jobs = await createScrapeJobsAndStartScraping({
@@ -113,7 +128,7 @@ export async function persistScrapeJobsStep(
     canonicalPageUrls,
   })
 
-  return jobs ? jobs.length : null
+  return jobs?.map((job) => ({ id: job.id })) ?? null
 }
 
 type PreparationFailureCode = Extract<

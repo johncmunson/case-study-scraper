@@ -117,6 +117,31 @@ type ScrapeJobInput = Readonly<{
   scrapeJobId: number
 }>
 
+export async function isScrapeBatchAdmitted({
+  scrapeRunId,
+}: Readonly<{ scrapeRunId: number }>) {
+  return db.transaction(async (transaction) => {
+    const run = await lockActiveScrapeRun(transaction, scrapeRunId)
+
+    if (!run) {
+      return false
+    }
+
+    const [scraping] = await transaction
+      .select({ id: scrapeRunStages.id })
+      .from(scrapeRunStages)
+      .where(
+        and(
+          eq(scrapeRunStages.scrapeRunId, scrapeRunId),
+          eq(scrapeRunStages.stage, "scraping"),
+          eq(scrapeRunStages.status, "in_progress"),
+        ),
+      )
+
+    return Boolean(scraping)
+  })
+}
+
 export async function claimScrapeJob({
   scrapeRunId,
   scrapeJobId,

@@ -53,6 +53,10 @@ async function seedPendingRun() {
   return { user, run }
 }
 
+function successfulScrape(json: unknown) {
+  return HttpResponse.json({ success: true, data: { json } })
+}
+
 function gatewayGeneration(urls: string[]) {
   return {
     content: [{ type: "text", text: JSON.stringify({ urls }) }],
@@ -72,10 +76,11 @@ beforeEach(async () => {
 })
 
 describe("scrape-run Run Preparation Workflow", () => {
-  it("claims the run, maps once, filters once, unions Example Pages, and persists every job before Scraping", async () => {
+  it("claims the run, maps once, filters once, unions Example Pages, and completes every scrape job", async () => {
     const { user, run: pendingRun } = await seedPendingRun()
     let mapCalls = 0
     let filteringCalls = 0
+    let scrapeCalls = 0
 
     server.use(
       http.post("https://api.firecrawl.dev/v2/map", () => {
@@ -98,12 +103,18 @@ describe("scrape-run Run Preparation Workflow", () => {
           ]),
         )
       }),
+      http.post("https://api.firecrawl.dev/v2/scrape", async ({ request }) => {
+        scrapeCalls += 1
+        const { url } = (await request.json()) as { url: string }
+        const clientName = url.split("/").at(-1) ?? "Unknown"
+        return successfulScrape({ client_name: clientName })
+      }),
     )
 
     const workflowRun = await start(scrapeRunWorkflow, [pendingRun.id])
 
     await expect(workflowRun.returnValue).resolves.toEqual({
-      outcome: "preparation_complete",
+      outcome: "complete",
       scrapeRunId: pendingRun.id,
       jobCount: 3,
     })
@@ -119,22 +130,23 @@ describe("scrape-run Run Preparation Workflow", () => {
 
     expect(mapCalls).toBe(1)
     expect(filteringCalls).toBe(1)
+    expect(scrapeCalls).toBe(3)
     expect(persistedRun).toMatchObject({
-      status: "in_progress",
+      status: "complete",
       workflowRunId: workflowRun.runId,
       stages: [
         { stage: "mapping", status: "complete", attemptCount: 1 },
         { stage: "filtering", status: "complete", attemptCount: 1 },
-        { stage: "scraping", status: "in_progress", attemptCount: 0 },
+        { stage: "scraping", status: "complete", attemptCount: 0 },
       ],
     })
     expect(jobs.map(({ url, status }) => ({ url, status }))).toEqual([
       {
         url: "https://example.com/customers/initech",
-        status: "pending",
+        status: "complete",
       },
-      { url: "https://example.com/customers/acme", status: "pending" },
-      { url: "https://example.com/customers/globex", status: "pending" },
+      { url: "https://example.com/customers/acme", status: "complete" },
+      { url: "https://example.com/customers/globex", status: "complete" },
     ])
   })
 
@@ -158,6 +170,10 @@ describe("scrape-run Run Preparation Workflow", () => {
         filteringCalls += 1
         return HttpResponse.json(gatewayGeneration([]))
       }),
+      http.post("https://api.firecrawl.dev/v2/scrape", async ({ request }) => {
+        const { url } = (await request.json()) as { url: string }
+        return successfulScrape({ client_name: url.split("/").at(-1) })
+      }),
     )
 
     const [firstWorkflow, duplicateWorkflow] = await Promise.all([
@@ -170,7 +186,7 @@ describe("scrape-run Run Preparation Workflow", () => {
     ])
 
     expect(outcomes.map(({ outcome }) => outcome).sort()).toEqual([
-      "preparation_complete",
+      "complete",
       "unclaimable",
     ])
     expect(mapCalls).toBe(1)

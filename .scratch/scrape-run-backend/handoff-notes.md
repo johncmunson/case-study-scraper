@@ -107,3 +107,18 @@ Notes for Phase 8:
 - The installed `@workflow/vitest` builder incorrectly bundles `builtin-modules` v5's JSON import without its import attribute, causing generated bundles to fail under Node. A narrow pnpm patch replaces that JSON import with the package's same static array; remove the patch when the upstream builder preserves JSON import attributes.
 - The database import now uses the focused `@vercel/functions/db-connections` export rather than the package root, avoiding unrelated OIDC/runtime dependencies in Workflow step bundles.
 - `next typegen` reports zero production workflows until Phase 9 adds the statically reachable `start(scrapeRunWorkflow, ...)` call in a Next.js server entrypoint; this matches Workflow's documented discovery behavior and does not affect `@workflow/vitest` integration tests.
+
+# Phase 8 handoff
+
+Implemented durable scrape-job processing and persisted-state finalization.
+
+- The Workflow now carries the immutable Extraction Field configuration into Scraping, processes persisted jobs in deterministic batches of five with `Promise.allSettled`, and checks persisted cancellation state before every batch and through each job claim immediately before Firecrawl.
+- Each job step owns Workflow's three-attempt retry policy, skips terminal jobs on replay, handles missing required fields without provider retry, stores only successful normalized Extraction Results, and converts exhausted or fatal provider failures into sanitized failed-job state.
+- Scraping finalizes from PostgreSQL aggregates: all-failed runs fail, while all-success and mixed-outcome runs complete. Cancellation Requests stop later batches, cancel unfinished jobs during finalization, and prevent late responses from persisting.
+- Workflow coverage now exercises all-success, mixed, all-failed, third-attempt recovery, missing-required no-retry behavior, successful-sibling idempotency during retries, explicit completed-job replay, pre-call cancellation, strict non-overlapping five-job batches, cancellation before a later batch, and late-response protection. The full suite passes 158 tests; typecheck, lint, and `workflow validate` also pass.
+
+Notes for Phase 9:
+
+- `persistScrapeJobsStep` now returns the persisted job identities (rather than only a count), and a successful Workflow result is `{ outcome: "complete" | "failed" | "cancelled", scrapeRunId, jobCount }`. Preparation failure and stopped/unclaimable outcomes remain unchanged.
+- The Workflow's claim step still self-attaches its Workflow run ID. Phase 9 should attach the ID returned by `start()` as planned; either side may win because repository attachment/claim is idempotent for the same ID.
+- No migration or new dependency was needed. The existing patched `@workflow/vitest` builder workaround remains necessary.
