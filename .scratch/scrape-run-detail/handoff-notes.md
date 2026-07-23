@@ -49,4 +49,6 @@ Phase 4 was completed as planned.
 - Failed post-cancellation GETs retain the confirmed Cancelled projection and stale ancillary detail. The normal refresh warning retries both read models, including the case where only Run-list reconciliation failed.
 - Focused MSW/Testing Library coverage exercises confirmation and retry flows, in-flight dismissal protection, all required response outcomes, no automatic POST retry, detail/list cache projection, revalidation success and failure, and accessible dialog naming/description.
 
-No backend or contract changes were needed in this phase; the cancellation endpoint and validated fetcher from earlier phases already matched the required mutation contract. Phase 5 can focus on integrated responsive/accessibility hardening and cross-feature race coverage.
+No backend or contract changes were needed in this phase; the cancellation endpoint and validated fetcher from earlier phases already matched the required mutation contract. One implementation wrinkle was that detail-only and list-only post-mutation refresh failures must be tracked independently when explicit SWR cache mutations retain stale data; focused regression tests now cover both cases.
+
+Verification completed with `pnpm typecheck`, `pnpm lint`, and `pnpm test` (397 tests passing). Phase 5 can focus on integrated responsive/accessibility hardening and cross-feature race coverage.
