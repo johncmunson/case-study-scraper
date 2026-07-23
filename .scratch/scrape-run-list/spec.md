@@ -92,15 +92,99 @@ Dates are ISO date-time strings on the wire even though the server repository us
 
 ### `POST /api/scrape-runs`
 
-Accepts the existing `NewScrapeRunInput` payload.
+Accepts this raw frontend/wire payload:
 
-- `201`: returns one `ScrapeRunSummary`.
-- `400`: malformed JSON or invalid Run Configuration.
-- `401`: no valid session.
-- `409`: another Active Scrape Run exists.
-- `503`: deployment or dispatch failure. A dispatch-related response may include `scrapeRunId` when a failed run was persisted.
+```ts
+type NewScrapeRunInput = {
+  name: string
+  url: string
+  exampleUrls: string[]
+  fields: Array<{
+    label: string
+    description: string
+    required: boolean
+    primaryIdentifier: boolean
+  }>
+}
+```
+
+The existing form and shared input type remain the implementation source of truth. The accepted contract is:
+
+- `name` contains 1–100 characters after trimming.
+- `url` and every Example Page URL contain at most 2,048 characters and use HTTP or HTTPS.
+- URLs must not contain credentials and must use public DNS hostnames rather than IP, localhost, or internal/special-use hostnames.
+- The target is normalized to its origin. Its submitted path, query string, and fragment do not define the Target Site.
+- There are 2–5 Example Page URLs.
+- Every Example Page uses the exact Target Site hostname; subdomains are not accepted.
+- Example Page query strings and fragments are removed. Default ports, trailing slashes, and supported percent-encoding variants are canonicalized.
+- Example Pages are distinct after canonicalization.
+- There are 1–10 Extraction Fields.
+- Each Field Label contains 2–30 characters after trimming and matches `^[A-Za-z0-9]+(?: [A-Za-z0-9]+)*$`.
+- Field Labels are unique ignoring case. Their lowercase, space-to-underscore Field Keys must also be unique.
+- Each field description contains 2–100 characters after trimming.
+- Exactly one field is the Primary Identifier, and that field must be required.
+
+The form should continue to submit raw user-entered strings and booleans. Backend parsing performs authoritative trimming, canonicalization, Field Key generation, cross-field validation, and one-active-run enforcement. This frontend scope does not duplicate those normalization rules in a second submit schema.
+
+Response behavior:
+
+- `201`: Workflow dispatch was accepted and its run ID was attached. Returns the newly persisted `pending` Run Summary with zero job counts.
+- `400`: malformed JSON or invalid Run Configuration. No run is created.
+- `401`: no valid session. No run is created.
+- `409`: another Active Scrape Run exists. No second run is created.
+- `503` without `scrapeRunId`: deployment configuration failed before persistence. No run is created.
+- `503` with `scrapeRunId`: a run was persisted. Workflow dispatch failure leaves it terminal and failed; Workflow-ID attachment failure may leave a Workflow able to self-attach and continue. The frontend must revalidate rather than infer the persisted status.
 
 The frontend must not automatically retry this non-idempotent request.
+
+### Error response shape
+
+Every handled route error has a JSON object with a safe `error` string. Depending on the path, it may also contain validation issues or a persisted run ID:
+
+```ts
+type ScrapeRunApiErrorResponse = {
+  error: string
+  issues?: unknown[] // Serialized Zod issues; frontend reconciliation ignores them.
+  scrapeRunId?: number
+}
+```
+
+Relevant status shapes are:
+
+```ts
+// 400 malformed JSON
+{ error: "Invalid JSON payload." }
+
+// 400 validation failure
+{ error: string, issues: ZodIssue[] }
+
+// 401
+{ error: "Unauthorized." }
+
+// 409
+{ error: "You already have an active scrape run." }
+
+// 503 after persistence
+{ error: string, scrapeRunId: number }
+```
+
+Frontend behavior must depend on HTTP status and the presence of a valid `scrapeRunId`, not on matching exact message text. Unknown, malformed, or non-JSON error bodies use a generic safe fallback.
+
+### Backend lifecycle and count guarantees relevant to the list
+
+- A Run Status is one of `pending`, `in_progress`, `complete`, `failed`, or `cancelled`.
+- `pending` and `in_progress` are active. At most one Active Scrape Run may exist per user.
+- A Cancellation Request does not make a run terminal. While cleanup is pending, status remains active and `cancellationRequestedAt` is non-null.
+- Scrape Jobs do not exist during Mapping or Filtering. Therefore, an active run may legitimately have `jobCounts.total === 0` while Run Preparation is underway.
+- Once Filtering succeeds, every selected Matching Page is persisted as one Scrape Job before Scraping starts. The Example Pages guarantee at least two jobs for a normally prepared run.
+- `jobCounts.total` is the number of persisted jobs. The five status-specific counts are mutually exclusive and sum to `total`.
+- A job is terminal when it is `complete`, `failed`, or `cancelled`. Pending and in-progress jobs are unfinished.
+- Ordinary Scraping finalization marks a run `complete` when at least one job succeeds, including mixed successful/failed outcomes. It marks a run `failed` when all jobs fail.
+- Mapping, Filtering, dispatch, job-creation, or unexpected orchestration failures can produce a failed run with zero jobs or with earlier successful jobs preserved.
+- Cancellation preserves jobs that were already complete or failed and marks unfinished jobs cancelled.
+- Terminal runs have a non-null `finishedAt`. A run may have null `startedAt` when it fails before Workflow claim; active claimed runs have a start time.
+- Read responses come entirely from PostgreSQL and never require the frontend to consult Workflow state.
+- The list endpoint intentionally omits fields, examples, stages, job rows, Extraction Results, and failure details.
 
 ## 6. Frontend wire contracts
 
