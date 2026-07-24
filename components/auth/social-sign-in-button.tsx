@@ -10,11 +10,13 @@ type SocialProvider = Parameters<typeof authClient.signIn.social>[0]["provider"]
 
 type SocialSignInButtonProps = {
   children: ReactNode
+  className?: string
   provider: SocialProvider
 }
 
 export function SocialSignInButton({
   children,
+  className,
   provider,
 }: SocialSignInButtonProps) {
   const [isPending, setIsPending] = useState(false)
@@ -37,7 +39,12 @@ export function SocialSignInButton({
 
   return (
     <div className="flex flex-col gap-3">
-      <Button type="button" onClick={handleSignIn} disabled={isPending}>
+      <Button
+        type="button"
+        className={className}
+        onClick={handleSignIn}
+        disabled={isPending}
+      >
         {isPending ? "Redirecting..." : children}
       </Button>
       {errorMessage ? (
