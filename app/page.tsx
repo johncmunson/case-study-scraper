@@ -203,12 +203,12 @@ export default async function LandingPage() {
         </div>
       </header>
 
-      <main>
+      <main className="relative isolate">
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 -z-10 bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-25 [mask-image:linear-gradient(to_bottom,black,transparent_85%)]"
+        />
         <section className="relative border-b px-4 pt-16 pb-20 sm:px-6 sm:pt-24 lg:px-8 lg:pt-28 lg:pb-28">
-          <div
-            aria-hidden="true"
-            className="absolute inset-0 -z-10 bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-25 [mask-image:linear-gradient(to_bottom,black,transparent_58%)]"
-          />
           <div className="mx-auto max-w-4xl text-center">
             <p className="font-mono text-xs font-semibold tracking-[0.18em] text-blue-700 uppercase">
               Research-ready extraction
