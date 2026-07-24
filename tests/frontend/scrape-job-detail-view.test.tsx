@@ -623,17 +623,22 @@ describe("Scrape Job detail polling", () => {
     await vi.waitFor(() => expect(requestCount).toBe(3))
   })
 
-  it("does not run a scheduled retry after manual Retry reaches a terminal state", async () => {
+  it("deduplicates a scheduled retry racing an in-flight manual Retry", async () => {
     vi.useFakeTimers()
     vi.spyOn(Math, "random").mockReturnValue(0)
     let requestCount = 0
+    let releaseTerminalResponse: () => void = () => undefined
+    const terminalResponse = new Promise<void>((resolve) => {
+      releaseTerminalResponse = () => resolve()
+    })
     server.use(
-      http.get(apiUrl, () => {
+      http.get(apiUrl, async () => {
         requestCount += 1
         if (requestCount === 1) return HttpResponse.json(validScrapeJobDetail)
         if (requestCount === 2) {
           return HttpResponse.json({ error: "Unavailable." }, { status: 503 })
         }
+        await terminalResponse
         return HttpResponse.json(
           detail({
             status: "complete",
@@ -655,8 +660,16 @@ describe("Scrape Job detail polling", () => {
       screen.getByRole("button", { name: "Retry" }).click()
     })
     await vi.waitFor(() => expect(requestCount).toBe(3))
-    expect(screen.getByRole("heading", { name: "Acme" })).toBeInTheDocument()
 
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10_000)
+    })
+    expect(requestCount).toBe(3)
+
+    releaseTerminalResponse()
+    await vi.waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Acme" })).toBeInTheDocument()
+    })
     await act(async () => {
       await vi.advanceTimersByTimeAsync(20_000)
     })
