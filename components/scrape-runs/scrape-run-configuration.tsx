@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils"
 function ExternalUrlLink({ url }: { url: string }) {
   return (
     <a
-      className="inline-flex max-w-full items-center gap-1 wrap-anywhere text-foreground underline underline-offset-4 hover:text-muted-foreground focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+      className="inline-flex max-w-full items-center gap-1 wrap-anywhere text-foreground underline underline-offset-4 hover:text-primary hover:decoration-primary focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       href={url}
       target="_blank"
       rel="noopener noreferrer"

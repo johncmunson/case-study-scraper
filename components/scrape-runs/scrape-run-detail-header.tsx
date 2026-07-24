@@ -99,7 +99,7 @@ export function ScrapeRunDetailHeader({
             {run.name}
           </h2>
           <a
-            className="inline-flex max-w-full items-center gap-1 text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="inline-flex max-w-full items-center gap-1 text-sm text-muted-foreground underline-offset-4 hover:text-primary hover:decoration-primary hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
             href={run.targetUrl}
             target="_blank"
             rel="noopener noreferrer"
