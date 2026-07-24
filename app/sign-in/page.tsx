@@ -21,7 +21,7 @@ const capabilities = [
 ]
 
 const focusLink =
-  "rounded-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 motion-reduce:transition-none"
+  "rounded-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none"
 
 function GoogleMark() {
   return (
@@ -90,7 +90,7 @@ export default async function SignInPage() {
 
         <div className="mx-auto grid w-full max-w-6xl items-center gap-10 lg:grid-cols-[minmax(0,1fr)_25rem] lg:items-end lg:gap-20">
           <section aria-labelledby="sign-in-heading" className="max-w-2xl">
-            <p className="font-mono text-xs font-semibold tracking-[0.18em] text-blue-700 uppercase">
+            <p className="font-mono text-xs font-semibold tracking-[0.18em] text-primary uppercase">
               Research-ready extraction
             </p>
             <h1
@@ -113,7 +113,7 @@ export default async function SignInPage() {
                   key={capability}
                   className="rounded-xl border bg-background/80 p-2.5 shadow-xs sm:p-4"
                 >
-                  <span className="flex size-6 items-center justify-center rounded-full bg-blue-50 text-blue-800">
+                  <span className="flex size-6 items-center justify-center rounded-full bg-brand-surface text-brand-surface-foreground">
                     <Check aria-hidden="true" className="size-3.5" />
                   </span>
                   <p className="mt-3 text-xs leading-4 font-medium sm:mt-4 sm:text-sm sm:leading-5">
@@ -131,12 +131,12 @@ export default async function SignInPage() {
             aria-labelledby="workspace-sign-in-title"
             className="relative"
           >
-            <Card className="gap-0 border border-blue-200/80 bg-card py-0 shadow-sm ring-0">
-              <CardHeader className="border-b bg-blue-50/50 p-6 sm:p-7">
-                <span className="mb-3 grid size-10 place-items-center rounded-lg border border-blue-200 bg-background text-blue-800 shadow-xs">
+            <Card className="gap-0 border border-brand-border/80 bg-card py-0 shadow-sm ring-0">
+              <CardHeader className="border-b bg-brand-surface/50 p-6 sm:p-7">
+                <span className="mb-3 grid size-10 place-items-center rounded-lg border border-brand-border bg-background text-brand-surface-foreground shadow-xs">
                   <FileSpreadsheet aria-hidden="true" className="size-4" />
                 </span>
-                <p className="font-mono text-[0.68rem] font-semibold tracking-[0.16em] text-blue-700 uppercase">
+                <p className="font-mono text-[0.68rem] font-semibold tracking-[0.16em] text-primary uppercase">
                   Workspace access
                 </p>
                 <h2
@@ -152,7 +152,7 @@ export default async function SignInPage() {
               <CardContent className="p-6 sm:p-7">
                 <SocialSignInButton
                   provider="google"
-                  className="h-11 w-full bg-blue-700 px-4 text-white shadow-sm hover:bg-blue-800 focus-visible:ring-blue-700/40 motion-reduce:transform-none motion-reduce:transition-none"
+                  className="h-11 w-full bg-primary px-4 text-primary-foreground shadow-sm hover:bg-brand-hover focus-visible:ring-ring/40 motion-reduce:transform-none motion-reduce:transition-none"
                 >
                   <GoogleMark />
                   Continue with Google

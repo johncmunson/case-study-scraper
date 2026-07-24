@@ -21,7 +21,7 @@ export function ProductPreview() {
         <Card className="border border-border/80 bg-card shadow-sm ring-0">
           <CardHeader className="border-b">
             <div className="flex items-center justify-between gap-3">
-              <p className="font-mono text-[0.68rem] font-semibold tracking-[0.16em] text-blue-700 uppercase">
+              <p className="font-mono text-[0.68rem] font-semibold tracking-[0.16em] text-primary uppercase">
                 Run configuration
               </p>
               <span className="rounded-full bg-muted px-2 py-1 text-[0.68rem] font-medium text-muted-foreground">
@@ -47,7 +47,7 @@ export function ProductPreview() {
                 <li className="flex min-w-0 items-start gap-2 rounded-lg border bg-muted/35 px-3 py-2">
                   <Check
                     aria-hidden="true"
-                    className="mt-0.5 size-3.5 shrink-0 text-blue-700"
+                    className="mt-0.5 size-3.5 shrink-0 text-primary"
                   />
                   <span className="min-w-0 break-all font-mono text-xs leading-5">
                     /work/luma-coffee
@@ -56,7 +56,7 @@ export function ProductPreview() {
                 <li className="flex min-w-0 items-start gap-2 rounded-lg border bg-muted/35 px-3 py-2">
                   <Check
                     aria-hidden="true"
-                    className="mt-0.5 size-3.5 shrink-0 text-blue-700"
+                    className="mt-0.5 size-3.5 shrink-0 text-primary"
                   />
                   <span className="min-w-0 break-all font-mono text-xs leading-5">
                     /work/fieldwork-health
@@ -65,7 +65,7 @@ export function ProductPreview() {
                 <li className="flex min-w-0 items-start gap-2 rounded-lg border bg-muted/35 px-3 py-2">
                   <Check
                     aria-hidden="true"
-                    className="mt-0.5 size-3.5 shrink-0 text-blue-700"
+                    className="mt-0.5 size-3.5 shrink-0 text-primary"
                   />
                   <span className="min-w-0 break-all font-mono text-xs leading-5">
                     /work/orbit-logistics
@@ -82,7 +82,7 @@ export function ProductPreview() {
                 {fields.map((field) => (
                   <li
                     key={field}
-                    className="rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-medium text-blue-950"
+                    className="rounded-md border border-brand-border bg-brand-surface px-2.5 py-1.5 text-xs font-medium text-brand-strong"
                   >
                     {field}
                   </li>
@@ -94,17 +94,17 @@ export function ProductPreview() {
 
         <div
           aria-hidden="true"
-          className="flex items-center justify-center text-blue-700"
+          className="flex items-center justify-center text-primary"
         >
           <ArrowDown className="size-5 lg:hidden" />
           <ArrowRight className="hidden size-5 lg:block" />
         </div>
 
-        <Card className="gap-0 border border-blue-200/80 bg-card py-0 shadow-sm ring-0">
-          <CardHeader className="border-b bg-blue-50/50 p-4">
+        <Card className="gap-0 border border-brand-border/80 bg-card py-0 shadow-sm ring-0">
+          <CardHeader className="border-b bg-brand-surface/50 p-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="font-mono text-[0.68rem] font-semibold tracking-[0.16em] text-blue-700 uppercase">
+                <p className="font-mono text-[0.68rem] font-semibold tracking-[0.16em] text-primary uppercase">
                   Extraction Dataset
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
@@ -134,7 +134,7 @@ export function ProductPreview() {
                     <span className="font-mono text-[0.68rem] text-muted-foreground">
                       RECORD {String(index + 1).padStart(2, "0")}
                     </span>
-                    <span className="inline-flex items-center gap-1 text-[0.68rem] font-medium text-blue-800">
+                    <span className="inline-flex items-center gap-1 text-[0.68rem] font-medium text-brand-surface-foreground">
                       <Check aria-hidden="true" className="size-3" />
                       Successful
                     </span>

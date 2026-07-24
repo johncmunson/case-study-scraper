@@ -119,6 +119,7 @@ export function ScrapeRunDetailHeader({
           >
             <Badge
               aria-label={`Status: ${statusLabel}`}
+              className="h-7 gap-1.5 px-3 text-sm [&>svg]:size-3.5!"
               variant={getStatusBadgeVariant(run)}
             >
               {showSpinner && <Spinner aria-hidden="true" />}

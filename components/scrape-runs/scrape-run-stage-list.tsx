@@ -15,6 +15,7 @@ import {
   getScrapeRunStageLabel,
   getScrapeRunStageStatusLabel,
 } from "@/lib/scrape-runs/presentation"
+import { cn } from "@/lib/utils"
 
 type BadgeVariant = "default" | "secondary" | "destructive" | "outline"
 
@@ -26,6 +27,15 @@ const STAGE_STATUS_BADGE_VARIANTS = {
   cancelled: "outline",
   skipped: "outline",
 } as const satisfies Record<ScrapeRunStageState["status"], BadgeVariant>
+
+const STAGE_STATUS_DOT_CLASSES = {
+  pending: "bg-muted-foreground",
+  in_progress: "bg-primary/50 ring-2 ring-primary/20",
+  complete: "bg-primary",
+  failed: "bg-destructive",
+  cancelled: "bg-muted-foreground",
+  skipped: "bg-muted-foreground",
+} as const satisfies Record<ScrapeRunStageState["status"], string>
 
 function StageTime({ label, timestamp }: { label: string; timestamp: string }) {
   return (
@@ -50,7 +60,10 @@ function ScrapeRunStageItem({ stage }: { stage: ScrapeRunStageState }) {
     <li className="relative min-w-0 py-1 pl-5 after:absolute after:top-6.5 after:-bottom-6.5 after:-left-0.5 after:w-0.5 after:bg-border last:after:hidden">
       <span
         aria-hidden="true"
-        className="absolute top-5 -left-1.75 z-10 size-3 rounded-full border-2 border-background bg-muted-foreground"
+        className={cn(
+          "absolute top-5 -left-1.75 z-10 size-3 rounded-full border-2 border-background",
+          STAGE_STATUS_DOT_CLASSES[stage.status],
+        )}
       />
       <div className="space-y-2 rounded-lg border p-3">
         <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">

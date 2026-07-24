@@ -69,7 +69,7 @@ const useCases = [
 ]
 
 const focusLink =
-  "rounded-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 motion-reduce:transition-none"
+  "rounded-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none"
 
 function getOptionalLegalUrl(value: string | undefined, label: string) {
   if (!value) {
@@ -100,7 +100,7 @@ function AccountActions({ isSignedIn }: { isSignedIn: boolean }) {
         href={POST_SIGN_IN_URL}
         className={cn(
           buttonVariants({ size: "lg" }),
-          "h-10 bg-blue-700 px-4 text-white hover:bg-blue-800 focus-visible:ring-blue-700/40 motion-reduce:transform-none motion-reduce:transition-none",
+          "h-10 bg-primary px-4 text-primary-foreground hover:bg-brand-hover focus-visible:ring-ring/40 motion-reduce:transform-none motion-reduce:transition-none",
         )}
       >
         Open app
@@ -124,7 +124,7 @@ function AccountActions({ isSignedIn }: { isSignedIn: boolean }) {
         href="/sign-in"
         className={cn(
           buttonVariants({ size: "lg" }),
-          "h-10 bg-blue-700 px-3 text-white hover:bg-blue-800 focus-visible:ring-blue-700/40 motion-reduce:transform-none motion-reduce:transition-none sm:px-4",
+          "h-10 bg-primary px-3 text-primary-foreground hover:bg-brand-hover focus-visible:ring-ring/40 motion-reduce:transform-none motion-reduce:transition-none sm:px-4",
         )}
       >
         Get started
@@ -139,7 +139,7 @@ function PrimaryCta({ isSignedIn }: { isSignedIn: boolean }) {
       href={isSignedIn ? POST_SIGN_IN_URL : "/sign-in"}
       className={cn(
         buttonVariants({ size: "lg" }),
-        "h-11 bg-blue-700 px-5 text-white shadow-sm hover:bg-blue-800 focus-visible:ring-blue-700/40 motion-reduce:transform-none motion-reduce:transition-none",
+        "h-11 bg-primary px-5 text-primary-foreground shadow-sm hover:bg-brand-hover focus-visible:ring-ring/40 motion-reduce:transform-none motion-reduce:transition-none",
       )}
     >
       {isSignedIn ? "Open app" : "Get started"}
@@ -210,7 +210,7 @@ export default async function LandingPage() {
         />
         <section className="relative border-b px-4 pt-16 pb-20 sm:px-6 sm:pt-24 lg:px-8 lg:pt-28 lg:pb-28">
           <div className="mx-auto max-w-4xl text-center">
-            <p className="font-mono text-xs font-semibold tracking-[0.18em] text-blue-700 uppercase">
+            <p className="font-mono text-xs font-semibold tracking-[0.18em] text-primary uppercase">
               Research-ready extraction
             </p>
             <h1 className="mt-5 text-balance text-4xl leading-[1.05] font-semibold tracking-[-0.045em] sm:text-6xl lg:text-7xl">
@@ -244,12 +244,12 @@ export default async function LandingPage() {
           id="how-it-works"
           aria-labelledby="how-it-works-title"
           tabIndex={-1}
-          className="scroll-mt-8 border-b px-4 py-20 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-blue-700 sm:px-6 sm:py-24 lg:px-8 lg:py-28"
+          className="scroll-mt-8 border-b px-4 py-20 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring sm:px-6 sm:py-24 lg:px-8 lg:py-28"
         >
           <div className="mx-auto max-w-7xl">
             <div className="grid gap-8 lg:grid-cols-[0.72fr_1.28fr] lg:gap-16">
               <div>
-                <p className="font-mono text-xs font-semibold tracking-[0.18em] text-blue-700 uppercase">
+                <p className="font-mono text-xs font-semibold tracking-[0.18em] text-primary uppercase">
                   How it works
                 </p>
                 <h2
@@ -270,7 +270,7 @@ export default async function LandingPage() {
                     key={workflow.number}
                     className="grid gap-3 py-7 sm:grid-cols-[3rem_1fr] sm:gap-5"
                   >
-                    <span className="font-mono text-xs font-semibold text-blue-700">
+                    <span className="font-mono text-xs font-semibold text-primary">
                       {workflow.number}
                     </span>
                     <div>
@@ -292,11 +292,11 @@ export default async function LandingPage() {
           id="output"
           aria-labelledby="output-title"
           tabIndex={-1}
-          className="scroll-mt-8 border-b bg-muted/25 px-4 py-20 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-blue-700 sm:px-6 sm:py-24 lg:px-8 lg:py-28"
+          className="scroll-mt-8 border-b bg-muted/25 px-4 py-20 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring sm:px-6 sm:py-24 lg:px-8 lg:py-28"
         >
           <div className="mx-auto max-w-7xl">
             <div className="max-w-3xl">
-              <p className="font-mono text-xs font-semibold tracking-[0.18em] text-blue-700 uppercase">
+              <p className="font-mono text-xs font-semibold tracking-[0.18em] text-primary uppercase">
                 Output
               </p>
               <h2
@@ -322,7 +322,7 @@ export default async function LandingPage() {
                         Structured values under your chosen fields
                       </CardDescription>
                     </div>
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-800">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-surface px-2.5 py-1 text-xs font-medium text-brand-surface-foreground">
                       <CheckCircle2 aria-hidden="true" className="size-3.5" />
                       Source linked
                     </span>
@@ -404,7 +404,7 @@ export default async function LandingPage() {
                 <Card className="border bg-card ring-0">
                   <CardContent className="space-y-4">
                     <div className="flex items-center gap-3">
-                      <span className="grid size-9 place-items-center rounded-lg bg-blue-50 text-blue-800">
+                      <span className="grid size-9 place-items-center rounded-lg bg-brand-surface text-brand-surface-foreground">
                         <FileSpreadsheet aria-hidden="true" className="size-4" />
                       </span>
                       <p className="font-semibold">CSV</p>
@@ -418,7 +418,7 @@ export default async function LandingPage() {
                 <Card className="border bg-card ring-0">
                   <CardContent className="space-y-4">
                     <div className="flex items-center gap-3">
-                      <span className="grid size-9 place-items-center rounded-lg bg-blue-50 text-blue-800">
+                      <span className="grid size-9 place-items-center rounded-lg bg-brand-surface text-brand-surface-foreground">
                         <FileJson2 aria-hidden="true" className="size-4" />
                       </span>
                       <p className="font-semibold">JSON</p>
@@ -443,7 +443,7 @@ export default async function LandingPage() {
               </div>
               <div className="flex flex-wrap gap-2 text-xs" aria-label="Example Scrape Job outcomes">
                 <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 font-medium">
-                  <CheckCircle2 aria-hidden="true" className="size-3.5 text-blue-700" />
+                  <CheckCircle2 aria-hidden="true" className="size-3.5 text-primary" />
                   Successful
                 </span>
                 <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 font-medium">
@@ -459,12 +459,12 @@ export default async function LandingPage() {
           id="use-cases"
           aria-labelledby="use-cases-title"
           tabIndex={-1}
-          className="scroll-mt-8 border-b px-4 py-20 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-blue-700 sm:px-6 sm:py-24 lg:px-8 lg:py-28"
+          className="scroll-mt-8 border-b px-4 py-20 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring sm:px-6 sm:py-24 lg:px-8 lg:py-28"
         >
           <div className="mx-auto max-w-7xl">
             <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
               <div>
-                <p className="font-mono text-xs font-semibold tracking-[0.18em] text-blue-700 uppercase">
+                <p className="font-mono text-xs font-semibold tracking-[0.18em] text-primary uppercase">
                   Use cases
                 </p>
                 <h2
@@ -488,7 +488,7 @@ export default async function LandingPage() {
                       index % 2 === 0 && "sm:border-r",
                     )}
                   >
-                    <p className="font-mono text-[0.68rem] font-semibold text-blue-700">
+                    <p className="font-mono text-[0.68rem] font-semibold text-primary">
                       {String(index + 1).padStart(2, "0")}
                     </p>
                     <h3 className="mt-4 text-lg font-semibold tracking-tight">
@@ -505,8 +505,8 @@ export default async function LandingPage() {
         </section>
 
         <section className="px-4 py-20 sm:px-6 sm:py-24 lg:px-8">
-          <div className="mx-auto max-w-5xl overflow-hidden rounded-2xl border border-blue-200 bg-blue-50/60 px-6 py-12 text-center shadow-sm sm:px-10 sm:py-16">
-            <p className="font-mono text-xs font-semibold tracking-[0.18em] text-blue-700 uppercase">
+          <div className="mx-auto max-w-5xl overflow-hidden rounded-2xl border border-brand-border bg-brand-surface/60 px-6 py-12 text-center shadow-sm sm:px-10 sm:py-16">
+            <p className="font-mono text-xs font-semibold tracking-[0.18em] text-primary uppercase">
               Build the dataset you need
             </p>
             <h2 className="mx-auto mt-4 max-w-2xl text-3xl leading-tight font-semibold tracking-[-0.03em] sm:text-4xl">

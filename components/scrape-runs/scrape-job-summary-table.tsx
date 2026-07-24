@@ -167,7 +167,7 @@ function ScrapeJobRow({
         <div className="min-w-0 space-y-1">
           {showPrimaryIdentifier ? (
             <Link
-              className="block truncate font-medium text-primary underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="block truncate font-medium text-foreground underline-offset-4 hover:text-primary hover:decoration-primary hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               href={getScrapeJobDetailPath(runId, job.id)}
               prefetch={false}
             >
@@ -176,7 +176,7 @@ function ScrapeJobRow({
           ) : (
             <Link
               aria-label={`${primaryIdentifierLabel}: Not available`}
-              className="block truncate font-medium text-primary underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="block truncate font-medium text-foreground underline-offset-4 hover:text-primary hover:decoration-primary hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               href={getScrapeJobDetailPath(runId, job.id)}
               prefetch={false}
             >
@@ -184,7 +184,7 @@ function ScrapeJobRow({
             </Link>
           )}
           <JobUrlLink
-            className="block max-w-full truncate text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:hidden"
+            className="block max-w-full truncate text-xs text-muted-foreground underline-offset-4 hover:text-primary hover:decoration-primary hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:hidden"
             job={job}
             runId={runId}
           />
@@ -192,7 +192,7 @@ function ScrapeJobRow({
       </TableCell>
       <TableCell className="hidden max-w-80 md:table-cell">
         <JobUrlLink
-          className="block max-w-80 truncate text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="block max-w-80 truncate text-muted-foreground underline-offset-4 hover:text-primary hover:decoration-primary hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           job={job}
           runId={runId}
         />
