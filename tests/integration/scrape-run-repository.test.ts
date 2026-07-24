@@ -1,13 +1,15 @@
+import { eq } from "drizzle-orm"
 import { beforeEach, describe, expect, it } from "vitest"
 
 import { db } from "@/db"
-import { users } from "@/db/schema"
+import { scrapeRuns, users } from "@/db/schema"
 import { newScrapeRunSchema } from "@/lib/scrape-runs/new-scrape-run"
 import {
   ActiveScrapeRunConflictError,
   attachWorkflowRunId,
   claimScrapeRun,
   createScrapeRun,
+  deleteOwnedTerminalScrapeRun,
   findOwnedScrapeRun,
   InvalidScrapeRunConfigurationError,
 } from "@/lib/server/scrape-runs/repository"
@@ -60,6 +62,102 @@ beforeEach(async () => {
 })
 
 describe("scrape-run repository", () => {
+  it.each(["complete", "failed", "cancelled"] as const)(
+    "deletes an owned %s Run and reports it missing on repetition",
+    async (status) => {
+      const user = await createUser()
+      const run = await createScrapeRun({
+        userId: user.id,
+        configuration: runConfiguration(),
+      })
+      await db
+        .update(scrapeRuns)
+        .set({ status })
+        .where(eq(scrapeRuns.id, run.id))
+
+      await expect(
+        deleteOwnedTerminalScrapeRun({
+          userId: user.id,
+          scrapeRunId: run.id,
+        }),
+      ).resolves.toEqual({ outcome: "deleted" })
+      await expect(
+        findOwnedScrapeRun({ userId: user.id, scrapeRunId: run.id }),
+      ).resolves.toBeNull()
+      await expect(
+        deleteOwnedTerminalScrapeRun({
+          userId: user.id,
+          scrapeRunId: run.id,
+        }),
+      ).resolves.toEqual({ outcome: "not_found" })
+    },
+  )
+
+  it.each([
+    ["pending", null],
+    ["in_progress", null],
+    ["in_progress", new Date("2026-04-01T10:00:00.000Z")],
+  ] as const)(
+    "rejects and preserves active status %s with cancellation request %s",
+    async (status, cancellationRequestedAt) => {
+      const user = await createUser()
+      const run = await createScrapeRun({
+        userId: user.id,
+        configuration: runConfiguration(),
+      })
+      await db
+        .update(scrapeRuns)
+        .set({ status, cancellationRequestedAt })
+        .where(eq(scrapeRuns.id, run.id))
+
+      await expect(
+        deleteOwnedTerminalScrapeRun({
+          userId: user.id,
+          scrapeRunId: run.id,
+        }),
+      ).resolves.toEqual({ outcome: "active_conflict" })
+      await expect(
+        findOwnedScrapeRun({ userId: user.id, scrapeRunId: run.id }),
+      ).resolves.toMatchObject({ id: run.id, status })
+    },
+  )
+
+  it("privately rejects a missing or non-owned Run without altering unrelated Runs", async () => {
+    const owner = await createUser("Owner")
+    const other = await createUser("Other")
+    const ownedRun = await createScrapeRun({
+      userId: owner.id,
+      configuration: runConfiguration(),
+    })
+    const unrelatedRun = await createScrapeRun({
+      userId: other.id,
+      configuration: runConfiguration(),
+    })
+    await db
+      .update(scrapeRuns)
+      .set({ status: "complete" })
+      .where(eq(scrapeRuns.id, ownedRun.id))
+
+    await expect(
+      deleteOwnedTerminalScrapeRun({
+        userId: other.id,
+        scrapeRunId: ownedRun.id,
+      }),
+    ).resolves.toEqual({ outcome: "not_found" })
+    await expect(
+      deleteOwnedTerminalScrapeRun({
+        userId: owner.id,
+        scrapeRunId: 999_999,
+      }),
+    ).resolves.toEqual({ outcome: "not_found" })
+    await expect(
+      findOwnedScrapeRun({ userId: owner.id, scrapeRunId: ownedRun.id }),
+    ).resolves.toMatchObject({ id: ownedRun.id })
+    await expect(
+      findOwnedScrapeRun({ userId: other.id, scrapeRunId: unrelatedRun.id }),
+    ).resolves.toMatchObject({ id: unrelatedRun.id })
+  })
+
   it("transactionally creates an immutable run configuration and its pending stages", async () => {
     const user = await createUser()
 

@@ -327,6 +327,83 @@ describe("scrape-run schema", () => {
     ).resolves.toBeDefined()
   })
 
+  it("cascades direct Run Deletion through fields, stages, jobs, and results only", async () => {
+    const user = await createUser()
+    const selectedRun = await createRun(user.id, { status: "complete" })
+    const unrelatedRun = await createRun(user.id, { status: "complete" })
+
+    for (const run of [selectedRun, unrelatedRun]) {
+      await db.insert(scrapeRunFields).values({
+        scrapeRunId: run.id,
+        position: 0,
+        label: "Client",
+        key: "client",
+        description: "The client name",
+        required: true,
+        primaryIdentifier: true,
+      })
+      await db.insert(scrapeRunStages).values([
+        { scrapeRunId: run.id, stage: "mapping" },
+        { scrapeRunId: run.id, stage: "filtering" },
+        { scrapeRunId: run.id, stage: "scraping" },
+      ])
+      await db.insert(scrapeJobs).values({
+        scrapeRunId: run.id,
+        url: `https://example.com/cases/${run.id}`,
+        status: "complete",
+        result: { client: `Client ${run.id}` },
+      })
+    }
+
+    await db.delete(scrapeRuns).where(eq(scrapeRuns.id, selectedRun.id))
+
+    const [selectedRuns, selectedFields, selectedStages, selectedJobs] =
+      await Promise.all([
+        db.select().from(scrapeRuns).where(eq(scrapeRuns.id, selectedRun.id)),
+        db
+          .select()
+          .from(scrapeRunFields)
+          .where(eq(scrapeRunFields.scrapeRunId, selectedRun.id)),
+        db
+          .select()
+          .from(scrapeRunStages)
+          .where(eq(scrapeRunStages.scrapeRunId, selectedRun.id)),
+        db
+          .select()
+          .from(scrapeJobs)
+          .where(eq(scrapeJobs.scrapeRunId, selectedRun.id)),
+      ])
+
+    expect(selectedRuns).toHaveLength(0)
+    expect(selectedFields).toHaveLength(0)
+    expect(selectedStages).toHaveLength(0)
+    expect(selectedJobs).toHaveLength(0)
+    await expect(
+      db.select().from(users).where(eq(users.id, user.id)),
+    ).resolves.toHaveLength(1)
+    await expect(
+      db.select().from(scrapeRuns).where(eq(scrapeRuns.id, unrelatedRun.id)),
+    ).resolves.toHaveLength(1)
+    await expect(
+      db
+        .select()
+        .from(scrapeRunFields)
+        .where(eq(scrapeRunFields.scrapeRunId, unrelatedRun.id)),
+    ).resolves.toHaveLength(1)
+    await expect(
+      db
+        .select()
+        .from(scrapeRunStages)
+        .where(eq(scrapeRunStages.scrapeRunId, unrelatedRun.id)),
+    ).resolves.toHaveLength(3)
+    await expect(
+      db
+        .select()
+        .from(scrapeJobs)
+        .where(eq(scrapeJobs.scrapeRunId, unrelatedRun.id)),
+    ).resolves.toMatchObject([{ result: { client: `Client ${unrelatedRun.id}` } }])
+  })
+
   it("cascades user deletion through runs, fields, stages, jobs, and results", async () => {
     const user = await createUser()
     const run = await createRun(user.id)

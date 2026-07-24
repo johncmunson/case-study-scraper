@@ -5,6 +5,7 @@ import {
   cancelScrapeRun,
   cancelScrapeRunResponseSchema,
   createScrapeRun,
+  deleteScrapeRun,
   fetchScrapeRunDetail,
   fetchScrapeRunSummaries,
   getScrapeJobDetailPath,
@@ -402,6 +403,77 @@ describe("Scrape Run frontend fetchers", () => {
       status: 200,
     })
   })
+
+  it("deletes a Run only for an exact bodyless 204", async () => {
+    const detailUrl = `${apiUrl}/17`
+    let method: string | undefined
+    server.use(
+      http.delete(detailUrl, ({ request }) => {
+        method = request.method
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+
+    await expect(deleteScrapeRun(detailUrl)).resolves.toBeUndefined()
+    expect(method).toBe("DELETE")
+  })
+
+  it.each([
+    [401, "Unauthorized."],
+    [404, "Scrape run not found."],
+    [409, "An active scrape run cannot be deleted."],
+  ])("retains safe deletion error details for %s", async (status, message) => {
+    const detailUrl = `${apiUrl}/17`
+    server.use(
+      http.delete(detailUrl, () =>
+        HttpResponse.json({ error: message }, { status }),
+      ),
+    )
+
+    await expect(deleteScrapeRun(detailUrl)).rejects.toMatchObject({
+      message,
+      status,
+    })
+  })
+
+  it("uses the status fallback for a non-JSON deletion error", async () => {
+    const detailUrl = `${apiUrl}/17`
+    server.use(
+      http.delete(detailUrl, () =>
+        HttpResponse.text("private details", { status: 500 }),
+      ),
+    )
+
+    await expect(deleteScrapeRun(detailUrl)).rejects.toMatchObject({
+      message: "Request failed with status 500.",
+      status: 500,
+    })
+  })
+
+  it("uses the safe deletion fallback for a network failure", async () => {
+    const detailUrl = `${apiUrl}/17`
+    server.use(http.delete(detailUrl, () => HttpResponse.error()))
+
+    await expect(deleteScrapeRun(detailUrl)).rejects.toMatchObject({
+      message: "Unable to delete the scrape run.",
+      status: undefined,
+    })
+  })
+
+  it.each([200, 202])(
+    "rejects nominal deletion success status %s",
+    async (status) => {
+      const detailUrl = `${apiUrl}/17`
+      server.use(
+        http.delete(detailUrl, () => HttpResponse.json({}, { status })),
+      )
+
+      await expect(deleteScrapeRun(detailUrl)).rejects.toMatchObject({
+        message: "The server returned an invalid response.",
+        status,
+      })
+    },
+  )
 
   it("posts cancellation and validates the exact 202 response", async () => {
     const cancelUrl = `${apiUrl}/17/cancel`

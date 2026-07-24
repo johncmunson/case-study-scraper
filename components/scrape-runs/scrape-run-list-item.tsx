@@ -1,8 +1,10 @@
 import Link from "next/link"
 
+import { ScrapeRunCardActions } from "@/components/scrape-runs/scrape-run-card-actions"
 import { Badge } from "@/components/ui/badge"
 import {
   Item,
+  ItemActions,
   ItemContent,
   ItemDescription,
   ItemTitle,
@@ -48,13 +50,15 @@ export function ScrapeRunListItem({ run }: { run: ScrapeRunSummary }) {
   return (
     <div role="listitem" className="min-w-0 overflow-hidden rounded-lg">
       <Item
-        render={<Link href={`/app/scrape-runs/${run.id}`} />}
         variant="outline"
-        className="min-w-0 items-start gap-4 overflow-hidden bg-card p-4 sm:flex-nowrap"
+        className="relative min-w-0 items-stretch gap-0 overflow-hidden bg-card p-0 sm:flex-nowrap"
       >
-        <ItemContent className="min-w-0 gap-3">
-          <div className="flex min-w-0 items-start justify-between gap-3">
-            <div className="min-w-0 flex-1">
+        <Link
+          href={`/app/scrape-runs/${run.id}`}
+          className="min-w-0 flex-1 rounded-lg p-4 outline-none transition-colors hover:bg-muted focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-inset"
+        >
+          <ItemContent className="min-w-0 gap-3">
+            <div className="min-w-0 pr-10">
               <ItemTitle className="block w-full min-w-0 text-base">
                 <h2 className="truncate" title={run.name}>
                   {run.name}
@@ -65,36 +69,40 @@ export function ScrapeRunListItem({ run }: { run: ScrapeRunSummary }) {
               </ItemDescription>
             </div>
 
-            <Badge
-              aria-label={`Status: ${statusLabel}`}
-              variant={getStatusBadgeVariant(run)}
-            >
-              {showSpinner && <Spinner aria-hidden="true" />}
-              {statusLabel}
-            </Badge>
-          </div>
+            <div className="space-y-2">
+              <div className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                <p>{getScrapeRunJobSummary(run)}</p>
+                <div className="flex shrink-0 items-center gap-2">
+                  <time
+                    aria-label={`Created ${formattedCreatedAt}`}
+                    className="text-xs text-muted-foreground"
+                    dateTime={run.createdAt}
+                    suppressHydrationWarning
+                  >
+                    {formattedCreatedAt}
+                  </time>
+                  <Badge
+                    aria-label={`Status: ${statusLabel}`}
+                    variant={getStatusBadgeVariant(run)}
+                  >
+                    {showSpinner && <Spinner aria-hidden="true" />}
+                    {statusLabel}
+                  </Badge>
+                </div>
+              </div>
 
-          <div className="space-y-2">
-            <div className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-              <p>{getScrapeRunJobSummary(run)}</p>
-              <time
-                aria-label={`Created ${formattedCreatedAt}`}
-                className="shrink-0 text-xs text-muted-foreground"
-                dateTime={run.createdAt}
-                suppressHydrationWarning
-              >
-                {formattedCreatedAt}
-              </time>
+              {hasActiveJobProgress && (
+                <Progress
+                  aria-label={`Scrape Job progress for ${run.name}`}
+                  value={getJobProgressPercentage(run.jobCounts)}
+                />
+              )}
             </div>
-
-            {hasActiveJobProgress && (
-              <Progress
-                aria-label={`Scrape Job progress for ${run.name}`}
-                value={getJobProgressPercentage(run.jobCounts)}
-              />
-            )}
-          </div>
-        </ItemContent>
+          </ItemContent>
+        </Link>
+        <ItemActions className="absolute top-4 right-4 z-10">
+          <ScrapeRunCardActions run={run} />
+        </ItemActions>
       </Item>
     </div>
   )

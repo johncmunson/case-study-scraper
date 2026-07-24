@@ -514,6 +514,22 @@ export async function fetchScrapeJobDetail(
   return detail
 }
 
+export async function deleteScrapeRun(url: string): Promise<void> {
+  const response = await fetchResponse(
+    url,
+    { method: "DELETE" },
+    "Unable to delete the scrape run.",
+  )
+
+  if (!response.ok) {
+    throw await scrapeRunApiErrorFromResponse(response)
+  }
+
+  if (response.status !== 204) {
+    throw invalidResponseError(response)
+  }
+}
+
 export async function cancelScrapeRun(
   url: string,
 ): Promise<CancelScrapeRunResponse> {

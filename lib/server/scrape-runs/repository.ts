@@ -6,6 +6,7 @@ import { db } from "@/db"
 import { scrapeRunFields, scrapeRuns, scrapeRunStages } from "@/db/schema"
 import {
   SCRAPE_RUN_STAGES,
+  isActiveScrapeRunStatus,
   type PersistedRunConfiguration,
 } from "@/lib/scrape-runs/contracts"
 
@@ -38,6 +39,11 @@ type OwnedScrapeRunInput = Readonly<{
   userId: number
   scrapeRunId: number
 }>
+
+export type DeleteOwnedTerminalScrapeRunResult =
+  | Readonly<{ outcome: "deleted" }>
+  | Readonly<{ outcome: "active_conflict" }>
+  | Readonly<{ outcome: "not_found" }>
 
 type WorkflowRunInput = Readonly<{
   scrapeRunId: number
@@ -237,6 +243,40 @@ export async function attachWorkflowRunId({
   })
 
   return existing?.workflowRunId === workflowRunId
+}
+
+export async function deleteOwnedTerminalScrapeRun({
+  userId,
+  scrapeRunId,
+}: OwnedScrapeRunInput): Promise<DeleteOwnedTerminalScrapeRunResult> {
+  return db.transaction(async (transaction) => {
+    const [run] = await transaction
+      .select({ id: scrapeRuns.id, status: scrapeRuns.status })
+      .from(scrapeRuns)
+      .where(
+        and(eq(scrapeRuns.id, scrapeRunId), eq(scrapeRuns.userId, userId)),
+      )
+      .for("update")
+
+    if (!run) {
+      return { outcome: "not_found" }
+    }
+
+    if (isActiveScrapeRunStatus(run.status)) {
+      return { outcome: "active_conflict" }
+    }
+
+    const [deleted] = await transaction
+      .delete(scrapeRuns)
+      .where(eq(scrapeRuns.id, run.id))
+      .returning({ id: scrapeRuns.id })
+
+    if (!deleted) {
+      throw new Error("The locked terminal scrape run could not be deleted.")
+    }
+
+    return { outcome: "deleted" }
+  })
 }
 
 export async function findOwnedScrapeRun({

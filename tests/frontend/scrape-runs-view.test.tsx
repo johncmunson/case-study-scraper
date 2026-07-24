@@ -177,6 +177,15 @@ describe("Scrape Run list states", () => {
       expect(createdAt).toHaveAccessibleName(
         `Created ${createdAt?.textContent}`,
       )
+      expect(createdAt?.parentElement).toContainElement(badge)
+      expect(
+        (createdAt?.compareDocumentPosition(badge) ?? 0) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy()
+      const titleRegion = itemQueries
+        .getByRole("heading", { name })
+        .closest("[class~='pr-10']")
+      expect(titleRegion).not.toContainElement(badge)
     }
 
     const statusSpinners = container.querySelectorAll(
@@ -229,6 +238,15 @@ describe("Scrape Run list states", () => {
       name: /Customer stories/,
     })
     expect(getRunItem("Customer stories")).toContainElement(customerStoriesLink)
+    const actionTrigger = screen.getByRole("button", {
+      name: "Actions for Customer stories",
+    })
+    expect(getRunItem("Customer stories")).toContainElement(actionTrigger)
+    expect(customerStoriesLink).not.toContainElement(actionTrigger)
+    expect(actionTrigger.closest("[data-slot='item-actions']")).toHaveClass(
+      "top-4",
+      "right-4",
+    )
     customerStoriesLink.focus()
     expect(customerStoriesLink).toHaveFocus()
     expect(customerStoriesLink).toHaveClass("focus-visible:ring-[3px]")
