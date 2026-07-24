@@ -88,7 +88,7 @@ export default async function SignInPage() {
           className="absolute inset-0 -z-10 bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-25 [mask-image:linear-gradient(to_bottom,black,transparent_72%)]"
         />
 
-        <div className="mx-auto grid w-full max-w-6xl items-center gap-10 lg:grid-cols-[minmax(0,1fr)_25rem] lg:gap-20">
+        <div className="mx-auto grid w-full max-w-6xl items-center gap-10 lg:grid-cols-[minmax(0,1fr)_25rem] lg:items-end lg:gap-20">
           <section aria-labelledby="sign-in-heading" className="max-w-2xl">
             <p className="font-mono text-xs font-semibold tracking-[0.18em] text-blue-700 uppercase">
               Research-ready extraction
@@ -127,7 +127,10 @@ export default async function SignInPage() {
             </ul>
           </section>
 
-          <section aria-labelledby="workspace-sign-in-title">
+          <section
+            aria-labelledby="workspace-sign-in-title"
+            className="relative"
+          >
             <Card className="gap-0 border border-blue-200/80 bg-card py-0 shadow-sm ring-0">
               <CardHeader className="border-b bg-blue-50/50 p-6 sm:p-7">
                 <span className="mb-3 grid size-10 place-items-center rounded-lg border border-blue-200 bg-background text-blue-800 shadow-xs">
@@ -159,7 +162,7 @@ export default async function SignInPage() {
                 </p>
               </CardContent>
             </Card>
-            <p className="mt-4 text-center font-mono text-[0.65rem] tracking-[0.12em] text-muted-foreground uppercase">
+            <p className="mt-4 text-center font-mono text-[0.65rem] tracking-[0.12em] text-muted-foreground uppercase lg:absolute lg:top-full lg:left-0 lg:w-full">
               Sourced records · Stable fields · Exportable data
             </p>
           </section>
