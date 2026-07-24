@@ -1,5 +1,6 @@
 "use client"
 
+import { XIcon } from "lucide-react"
 import { useState } from "react"
 
 import {
@@ -15,6 +16,11 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 export function CancelScrapeRunDialog({
   isMutating,
@@ -37,12 +43,7 @@ export function CancelScrapeRunDialog({
   }
 
   return (
-    <div className="space-y-2 sm:text-right">
-      {isRetry && (
-        <p className="max-w-sm wrap-anywhere text-sm text-muted-foreground">
-          The earlier cancellation request has not finished cleanup.
-        </p>
-      )}
+    <div className="flex max-w-sm flex-col items-end gap-2 text-right">
       <AlertDialog
         open={open}
         onOpenChange={(nextOpen, eventDetails) => {
@@ -54,14 +55,25 @@ export function CancelScrapeRunDialog({
           setOpen(nextOpen)
         }}
       >
-        <AlertDialogTrigger
-          render={
-            <Button variant={isRetry ? "outline" : "destructive"} />
-          }
-          disabled={isMutating}
-        >
-          {triggerLabel}
-        </AlertDialogTrigger>
+        <Tooltip>
+          <AlertDialogTrigger
+            render={
+              <TooltipTrigger
+                render={
+                  <Button
+                    size="icon-sm"
+                    variant={isRetry ? "outline" : "destructive"}
+                  />
+                }
+              />
+            }
+            disabled={isMutating}
+          >
+            <XIcon aria-hidden="true" />
+            <span className="sr-only">{triggerLabel}</span>
+          </AlertDialogTrigger>
+          <TooltipContent>Cancel scrape job</TooltipContent>
+        </Tooltip>
         {open && (
           <AlertDialogContent>
             <AlertDialogHeader>
@@ -93,6 +105,11 @@ export function CancelScrapeRunDialog({
           </AlertDialogContent>
         )}
       </AlertDialog>
+      {isRetry && (
+        <p className="wrap-anywhere text-sm text-muted-foreground">
+          The earlier cancellation request has not finished cleanup.
+        </p>
+      )}
     </div>
   )
 }

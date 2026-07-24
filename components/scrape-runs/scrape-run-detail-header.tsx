@@ -110,7 +110,8 @@ export function ScrapeRunDetailHeader({
           </a>
         </div>
 
-        <div className="flex shrink-0 flex-col items-start gap-3 sm:items-end">
+        <div className="flex shrink-0 items-start gap-2">
+          {cancellationAction}
           <div
             role="status"
             aria-label={`Scrape Run status: ${statusLabel}`}
@@ -126,7 +127,6 @@ export function ScrapeRunDetailHeader({
               {statusLabel}
             </Badge>
           </div>
-          {cancellationAction}
         </div>
       </div>
 
