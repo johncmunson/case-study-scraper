@@ -356,6 +356,68 @@ describe("Extraction Dataset download", () => {
     ).toBeEnabled()
   })
 
+  it("warns safely when the browser cannot create an object URL", async () => {
+    const browserDownload = installBrowserDownloadSpies()
+    browserDownload.createObjectURL.mockImplementationOnce(() => {
+      throw new Error("private object URL failure")
+    })
+    server.use(
+      http.get(
+        datasetApiUrl,
+        () => new HttpResponse("dataset"),
+      ),
+    )
+
+    renderTable(run())
+    await chooseFormat("JSON")
+
+    expect(
+      await screen.findByText(
+        "Error: Unable to download the extraction dataset.",
+      ),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText("private object URL failure"),
+    ).not.toBeInTheDocument()
+    expect(browserDownload.revokeObjectURL).not.toHaveBeenCalled()
+    expect(browserDownload.click).not.toHaveBeenCalled()
+    expect(
+      screen.getByRole("button", { name: "Download dataset" }),
+    ).toBeEnabled()
+  })
+
+  it("removes the link, revokes the object URL, and warns when browser download handoff fails", async () => {
+    const browserDownload = installBrowserDownloadSpies()
+    browserDownload.click.mockImplementationOnce(() => {
+      throw new Error("private browser handoff failure")
+    })
+    server.use(
+      http.get(
+        datasetApiUrl,
+        () => new HttpResponse("dataset"),
+      ),
+    )
+
+    renderTable(run())
+    await chooseFormat("CSV")
+
+    expect(
+      await screen.findByText(
+        "Error: Unable to download the extraction dataset.",
+      ),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText("private browser handoff failure"),
+    ).not.toBeInTheDocument()
+    expect(browserDownload.getClickedAnchor()?.isConnected).toBe(false)
+    expect(browserDownload.revokeObjectURL).toHaveBeenCalledWith(
+      "blob:extraction-dataset",
+    )
+    expect(
+      screen.getByRole("button", { name: "Download dataset" }),
+    ).toBeEnabled()
+  })
+
   it("keeps filtering and pagination state while downloading the Run-wide dataset", async () => {
     const jobs = Array.from({ length: 31 }, (_, index) => job(index + 1))
     installBrowserDownloadSpies()

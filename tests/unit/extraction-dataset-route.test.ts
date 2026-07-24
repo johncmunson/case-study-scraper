@@ -1,3 +1,4 @@
+import { writeToString } from "fast-csv"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import { getCurrentSession } from "@/auth/session"
@@ -11,6 +12,12 @@ vi.mock("@/auth/session", () => ({
 vi.mock("@/lib/server/scrape-runs/extraction-dataset-repository", () => ({
   findOwnedScrapeRunExtractionDatasetSource: vi.fn(),
 }))
+
+vi.mock("fast-csv", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("fast-csv")>()
+
+  return { ...actual, writeToString: vi.fn() }
+})
 
 const source = {
   id: 17,
@@ -58,7 +65,9 @@ function request(format?: string) {
   return new Request(url)
 }
 
-beforeEach(() => {
+beforeEach(async () => {
+  const actualCsv = await vi.importActual<typeof import("fast-csv")>("fast-csv")
+  vi.mocked(writeToString).mockImplementation(actualCsv.writeToString)
   vi.mocked(getCurrentSession).mockResolvedValue({
     user: { id: "42" },
   } as NonNullable<Awaited<ReturnType<typeof getCurrentSession>>>)
@@ -270,30 +279,46 @@ describe("Extraction Dataset route", () => {
     },
   )
 
-  it("returns a safe 500 and safe diagnostics when serialization fails", async () => {
-    vi.spyOn(JSON, "stringify").mockImplementationOnce(() => {
-      throw new Error("sensitive extracted value")
-    })
+  it.each([
+    {
+      format: "json" as const,
+      failSerialization: () =>
+        vi.spyOn(JSON, "stringify").mockImplementationOnce(() => {
+          throw new Error("sensitive extracted value")
+        }),
+    },
+    {
+      format: "csv" as const,
+      failSerialization: () =>
+        vi
+          .mocked(writeToString)
+          .mockRejectedValueOnce(new Error("sensitive extracted value")),
+    },
+  ])(
+    "returns a safe 500 and safe diagnostics when $format serialization fails",
+    async ({ format, failSerialization }) => {
+      failSerialization()
 
-    const response = await getExtractionDataset(request("json"), runContext())
+      const response = await getExtractionDataset(request(format), runContext())
 
-    expect(response.status).toBe(500)
-    await expect(response.json()).resolves.toEqual({
-      error: "The Extraction Dataset could not be generated.",
-    })
-    expect(console.error).toHaveBeenCalledWith(
-      "Extraction Dataset generation failed.",
-      expect.objectContaining({
-        scrapeRunId: 17,
-        format: "json",
-        recordCount: 2,
-        failureCategory: "serialization-failed",
-      }),
-    )
-    expect(JSON.stringify(vi.mocked(console.error).mock.calls)).not.toContain(
-      "sensitive extracted value",
-    )
-  })
+      expect(response.status).toBe(500)
+      await expect(response.json()).resolves.toEqual({
+        error: "The Extraction Dataset could not be generated.",
+      })
+      expect(console.error).toHaveBeenCalledWith(
+        "Extraction Dataset generation failed.",
+        expect.objectContaining({
+          scrapeRunId: 17,
+          format,
+          recordCount: 2,
+          failureCategory: "serialization-failed",
+        }),
+      )
+      expect(JSON.stringify(vi.mocked(console.error).mock.calls)).not.toContain(
+        "sensitive extracted value",
+      )
+    },
+  )
 
   it("returns a safe 500 and does not log database errors or extracted values when loading fails", async () => {
     vi.mocked(findOwnedScrapeRunExtractionDatasetSource).mockRejectedValue(

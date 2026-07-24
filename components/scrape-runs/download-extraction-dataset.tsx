@@ -31,6 +31,7 @@ import {
   getExtractionDatasetFilename,
   type ExtractionDatasetFormat,
 } from "@/lib/scrape-runs/extraction-dataset"
+import { cn } from "@/lib/utils"
 
 const DOWNLOAD_FAILURE_MESSAGE = "Unable to download the extraction dataset."
 const TOAST_POSITION = "bottom-center"
@@ -48,6 +49,7 @@ type DownloadExtractionDatasetProps = {
 }
 
 function DownloadButton({
+  className,
   disabled = false,
   preparing = false,
   ...props
@@ -57,6 +59,7 @@ function DownloadButton({
       {...props}
       type="button"
       variant="outline"
+      className={cn("w-full sm:w-auto", className)}
       disabled={disabled || preparing}
       aria-busy={preparing}
     >
@@ -143,7 +146,7 @@ export function DownloadExtractionDataset({
           render={
             <span
               aria-label="Download dataset"
-              className="inline-flex"
+              className="inline-flex w-full sm:w-auto"
               tabIndex={0}
             />
           }

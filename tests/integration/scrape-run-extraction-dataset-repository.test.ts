@@ -204,14 +204,36 @@ describe("Extraction Dataset repository", () => {
     ).resolves.toBeNull()
   })
 
+  it.each(["pending", "in_progress"] satisfies readonly ScrapeRunStatus[])(
+    "returns the owned active %s Run state without loading Extraction Results from successful Jobs",
+    async (status) => {
+      const owner = await createUser(`Owner ${status}`)
+      const run = await createRun({ userId: owner.id, status })
+      await db.insert(scrapeJobs).values({
+        scrapeRunId: run.id,
+        url: "https://example.com/customers/acme",
+        status: "complete",
+        result: { client_name: "Acme", industry: null },
+      })
+
+      await expect(
+        findOwnedScrapeRunExtractionDatasetSource({
+          userId: owner.id,
+          scrapeRunId: run.id,
+        }),
+      ).resolves.toMatchObject({
+        status,
+        successfulJobs: [],
+      })
+    },
+  )
+
   it.each([
-    "pending",
-    "in_progress",
     "complete",
     "failed",
     "cancelled",
   ] satisfies readonly ScrapeRunStatus[])(
-    "returns the owned %s Run state and its successful Jobs",
+    "returns the owned terminal %s Run state and its successful Jobs",
     async (status) => {
       const owner = await createUser(`Owner ${status}`)
       const run = await createRun({ userId: owner.id, status })

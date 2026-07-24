@@ -5,6 +5,7 @@ import { and, asc, eq } from "drizzle-orm"
 import { db } from "@/db"
 import { scrapeJobs, scrapeRunFields, scrapeRuns } from "@/db/schema"
 import type { ExtractionDatasetSource } from "@/lib/scrape-runs/extraction-dataset"
+import { isActiveScrapeRunStatus } from "@/lib/scrape-runs/contracts"
 
 export async function findOwnedScrapeRunExtractionDatasetSource({
   userId,
@@ -13,16 +14,36 @@ export async function findOwnedScrapeRunExtractionDatasetSource({
   userId: number
   scrapeRunId: number
 }>) {
+  const ownedRunWhere = and(
+    eq(scrapeRuns.id, scrapeRunId),
+    eq(scrapeRuns.userId, userId),
+  )
+  const identityColumns = {
+    id: true,
+    name: true,
+    status: true,
+  } as const
+  const ownedRun = await db.query.scrapeRuns.findFirst({
+    where: ownedRunWhere,
+    columns: identityColumns,
+  })
+
+  if (!ownedRun) {
+    return null
+  }
+
+  if (isActiveScrapeRunStatus(ownedRun.status)) {
+    return {
+      ...ownedRun,
+      fields: [],
+      successfulJobs: [],
+    } satisfies ExtractionDatasetSource &
+      Readonly<{ id: number; name: string }>
+  }
+
   const run = await db.query.scrapeRuns.findFirst({
-    where: and(
-      eq(scrapeRuns.id, scrapeRunId),
-      eq(scrapeRuns.userId, userId),
-    ),
-    columns: {
-      id: true,
-      name: true,
-      status: true,
-    },
+    where: ownedRunWhere,
+    columns: identityColumns,
     with: {
       fields: {
         columns: {

@@ -283,14 +283,14 @@ export function ScrapeJobSummaryTable({ run }: { run: ScrapeRunDetail }) {
   return (
     <section aria-labelledby="scrape-jobs-heading">
       <Card>
-        <CardHeader>
+        <CardHeader className="has-data-[slot=card-action]:grid-cols-1 sm:has-data-[slot=card-action]:grid-cols-[1fr_auto]">
           <CardTitle>
             <h3 id="scrape-jobs-heading">Scrape Jobs</h3>
           </CardTitle>
           <CardDescription>
             Browse extraction attempts for the matching pages in this Scrape Run.
           </CardDescription>
-          <CardAction>
+          <CardAction className="col-start-1 row-span-1 row-start-3 justify-self-stretch pt-2 sm:col-start-2 sm:row-span-2 sm:row-start-1 sm:justify-self-end sm:pt-0">
             <DownloadExtractionDataset
               runId={run.id}
               runName={run.name}
