@@ -120,6 +120,28 @@ const jobDetail = {
   updatedAt: new Date("2026-04-01T10:04:00.000Z"),
   startedAt: new Date("2026-04-01T10:03:00.000Z"),
   finishedAt: new Date("2026-04-01T10:04:00.000Z"),
+  scrapeRun: {
+    id: 17,
+    name: "Customer stories",
+  },
+  fields: [
+    {
+      position: 0,
+      label: "Client Name",
+      key: "client_name",
+      description: "The customer name",
+      required: true,
+      primaryIdentifier: true,
+    },
+    {
+      position: 1,
+      label: "Industry",
+      key: "industry",
+      description: "The customer industry",
+      required: false,
+      primaryIdentifier: false,
+    },
+  ],
 }
 
 function runContext(runId = "17") {
@@ -282,26 +304,42 @@ describe("scrape-run read routes", () => {
       scrapeJobId: 31,
     })
     expect(response.status).toBe(200)
-    await expect(response.json()).resolves.toEqual({
+    const body = await response.json()
+
+    expect(body).toEqual({
       ...jobDetail,
       createdAt: "2026-04-01T10:03:00.000Z",
       updatedAt: "2026-04-01T10:04:00.000Z",
       startedAt: "2026-04-01T10:03:00.000Z",
       finishedAt: "2026-04-01T10:04:00.000Z",
     })
+    expect(body.scrapeRun).toEqual({ id: 17, name: "Customer stories" })
+    expect(body).not.toHaveProperty("workflowRunId")
+    expect(body).not.toHaveProperty("scrapeRun.targetUrl")
+    expect(body).not.toHaveProperty("scrapeRun.jobs")
+    expect(body.fields[0]).not.toHaveProperty("id")
+    expect(body.fields[0]).not.toHaveProperty("scrapeRunId")
   })
 
   it.each([
     ["bad-run", "31"],
+    ["0", "31"],
+    ["-1", "31"],
+    ["9007199254740992", "31"],
     ["17", "bad-job"],
     ["17", "0"],
-  ])("returns 404 for invalid nested IDs %s/%s", async (runId, jobId) => {
+    ["17", "-1"],
+    ["17", "9007199254740992"],
+  ])("returns the private 404 for invalid nested IDs %s/%s", async (runId, jobId) => {
     const response = await getScrapeJob(
       new Request("http://localhost"),
       jobContext(runId, jobId),
     )
 
     expect(response.status).toBe(404)
+    await expect(response.json()).resolves.toEqual({
+      error: "Scrape job not found.",
+    })
     expect(findOwnedScrapeJobDetail).not.toHaveBeenCalled()
   })
 

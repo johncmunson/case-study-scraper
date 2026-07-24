@@ -335,18 +335,44 @@ describe("scrape-run polling read repository", () => {
         scrapeJobId: job.id,
       }),
     ).resolves.toBeNull()
-    await expect(
-      findOwnedScrapeJobDetail({
-        userId: owner.id,
-        scrapeRunId: run.id,
-        scrapeJobId: job.id,
-      }),
-    ).resolves.toMatchObject({
+    const detail = await findOwnedScrapeJobDetail({
+      userId: owner.id,
+      scrapeRunId: run.id,
+      scrapeJobId: job.id,
+    })
+
+    expect(detail).toMatchObject({
       id: job.id,
       result: { client_name: "Acme", industry: "Software" },
       missingRequiredFieldKeys: null,
       failureCode: null,
       failureMessage: null,
+      scrapeRun: {
+        id: run.id,
+        name: "Customer stories",
+      },
     })
+    expect(detail?.fields).toEqual([
+      {
+        position: 0,
+        label: "Client Name",
+        key: "client_name",
+        description: "The customer name",
+        required: true,
+        primaryIdentifier: true,
+      },
+      {
+        position: 1,
+        label: "Industry",
+        key: "industry",
+        description: "The customer industry",
+        required: false,
+        primaryIdentifier: false,
+      },
+    ])
+    expect(detail).not.toHaveProperty("scrapeRun.targetUrl")
+    expect(detail).not.toHaveProperty("scrapeRun.workflowRunId")
+    expect(detail?.fields[0]).not.toHaveProperty("id")
+    expect(detail?.fields[0]).not.toHaveProperty("scrapeRunId")
   })
 })

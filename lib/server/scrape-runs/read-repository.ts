@@ -3,12 +3,7 @@ import "server-only"
 import { and, asc, desc, eq, sql } from "drizzle-orm"
 
 import { db } from "@/db"
-import {
-  scrapeJobs,
-  scrapeRunFields,
-  scrapeRuns,
-  type ScrapeJob,
-} from "@/db/schema"
+import { scrapeJobs, scrapeRunFields, scrapeRuns } from "@/db/schema"
 import { SCRAPE_RUN_STAGES } from "@/lib/scrape-runs/contracts"
 
 const jobCountSelection = {
@@ -175,8 +170,8 @@ export async function findOwnedScrapeJobDetail({
   userId: number
   scrapeRunId: number
   scrapeJobId: number
-}>): Promise<Omit<ScrapeJob, "scrapeRunId"> | null> {
-  const [job] = await db
+}>) {
+  const rows = await db
     .select({
       id: scrapeJobs.id,
       url: scrapeJobs.url,
@@ -190,9 +185,25 @@ export async function findOwnedScrapeJobDetail({
       updatedAt: scrapeJobs.updatedAt,
       startedAt: scrapeJobs.startedAt,
       finishedAt: scrapeJobs.finishedAt,
+      scrapeRun: {
+        id: scrapeRuns.id,
+        name: scrapeRuns.name,
+      },
+      field: {
+        position: scrapeRunFields.position,
+        label: scrapeRunFields.label,
+        key: scrapeRunFields.key,
+        description: scrapeRunFields.description,
+        required: scrapeRunFields.required,
+        primaryIdentifier: scrapeRunFields.primaryIdentifier,
+      },
     })
     .from(scrapeJobs)
     .innerJoin(scrapeRuns, eq(scrapeRuns.id, scrapeJobs.scrapeRunId))
+    .innerJoin(
+      scrapeRunFields,
+      eq(scrapeRunFields.scrapeRunId, scrapeRuns.id),
+    )
     .where(
       and(
         eq(scrapeRuns.userId, userId),
@@ -200,8 +211,20 @@ export async function findOwnedScrapeJobDetail({
         eq(scrapeJobs.id, scrapeJobId),
       ),
     )
+    .orderBy(asc(scrapeRunFields.position))
 
-  return job ?? null
+  const firstRow = rows[0]
+
+  if (!firstRow) {
+    return null
+  }
+
+  const { field: _field, ...job } = firstRow
+
+  return {
+    ...job,
+    fields: rows.map(({ field }) => field),
+  }
 }
 
 async function getScrapeJobCounts(scrapeRunId: number) {

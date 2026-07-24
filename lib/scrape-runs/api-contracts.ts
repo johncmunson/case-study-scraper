@@ -2,6 +2,7 @@ import { z } from "zod"
 
 import {
   SCRAPE_RUN_STAGES,
+  extractionResultRecordSchema,
   scrapeJobStatusSchema,
   scrapeRunErrorCodeSchema,
   scrapeRunStageSchema,
@@ -19,6 +20,13 @@ export function getScrapeRunDetailApiPath(runId: number | string) {
 
 export function getScrapeRunCancellationApiPath(runId: number | string) {
   return `${getScrapeRunDetailApiPath(runId)}/cancel`
+}
+
+export function getScrapeJobDetailApiPath(
+  runId: number | string,
+  jobId: number | string,
+) {
+  return `${getScrapeRunDetailApiPath(runId)}/scrape-jobs/${jobId}`
 }
 
 export function getScrapeJobDetailPath(
@@ -66,6 +74,7 @@ const nonemptyStringSchema = z
   .string()
   .min(1)
   .refine((value) => value.trim().length > 0)
+const fieldKeySchema = z.string().regex(/^[a-z0-9]+(?:_[a-z0-9]+)*$/)
 
 export const scrapeRunJobCountsSchema = z
   .object({
@@ -103,7 +112,7 @@ export const scrapeRunFieldSchema = z
   .object({
     position: nonnegativeIntegerSchema,
     label: nonemptyStringSchema,
-    key: z.string().regex(/^[a-z0-9]+(?:_[a-z0-9]+)*$/),
+    key: fieldKeySchema,
     description: nonemptyStringSchema,
     required: z.boolean(),
     primaryIdentifier: z.boolean(),
@@ -208,6 +217,126 @@ export const scrapeRunDetailSchema = scrapeRunSummarySchema
     }
   })
 
+const scrapeJobDetailFieldsSchema = orderedScrapeRunFieldsSchema.superRefine(
+  (fields, context) => {
+    const keys = new Set<string>()
+    const primaryFieldIndexes: number[] = []
+
+    fields.forEach((field, index) => {
+      if (keys.has(field.key)) {
+        context.addIssue({
+          code: "custom",
+          message: "Extraction Field Keys must be unique.",
+          path: [index, "key"],
+        })
+      }
+      keys.add(field.key)
+
+      if (field.primaryIdentifier) {
+        primaryFieldIndexes.push(index)
+      }
+    })
+
+    if (primaryFieldIndexes.length !== 1) {
+      context.addIssue({
+        code: "custom",
+        message: "Exactly one field must be the Primary Identifier.",
+        path: [],
+      })
+      return
+    }
+
+    const primaryFieldIndex = primaryFieldIndexes[0]
+
+    if (!fields[primaryFieldIndex].required) {
+      context.addIssue({
+        code: "custom",
+        message: "The Primary Identifier field must be required.",
+        path: [primaryFieldIndex, "required"],
+      })
+    }
+  },
+)
+
+export const scrapeJobDetailSchema = z
+  .object({
+    id: positiveIntegerSchema,
+    url: httpUrlSchema,
+    status: scrapeJobStatusSchema,
+    attemptCount: nonnegativeIntegerSchema,
+    result: extractionResultRecordSchema.nullable(),
+    missingRequiredFieldKeys: z.array(fieldKeySchema).nullable(),
+    failureCode: nullableFailureCodeSchema,
+    failureMessage: z.string().nullable(),
+    createdAt: isoDateTimeSchema,
+    updatedAt: isoDateTimeSchema,
+    startedAt: nullableIsoDateTimeSchema,
+    finishedAt: nullableIsoDateTimeSchema,
+    scrapeRun: z
+      .object({
+        id: positiveIntegerSchema,
+        name: z.string().min(1).max(100),
+      })
+      .strict(),
+    fields: scrapeJobDetailFieldsSchema,
+  })
+  .strict()
+  .superRefine((detail, context) => {
+    const fieldsByKey = new Map(
+      detail.fields.map((field) => [field.key, field]),
+    )
+
+    if (detail.status === "complete") {
+      if (detail.result === null) {
+        context.addIssue({
+          code: "custom",
+          message: "A complete Scrape Job must have an Extraction Result.",
+          path: ["result"],
+        })
+      } else {
+        const result = detail.result
+        const resultKeys = Object.keys(result)
+
+        if (
+          resultKeys.length !== detail.fields.length ||
+          detail.fields.some((field) => !Object.hasOwn(result, field.key))
+        ) {
+          context.addIssue({
+            code: "custom",
+            message: "The Extraction Result must contain exactly the configured Field Keys.",
+            path: ["result"],
+          })
+        }
+
+        detail.fields.forEach((field) => {
+          if (field.required && result[field.key] === null) {
+            context.addIssue({
+              code: "custom",
+              message: "Required Extraction Fields must have a value.",
+              path: ["result", field.key],
+            })
+          }
+        })
+      }
+    } else if (detail.result !== null) {
+      context.addIssue({
+        code: "custom",
+        message: "Only a complete Scrape Job may have an Extraction Result.",
+        path: ["result"],
+      })
+    }
+
+    detail.missingRequiredFieldKeys?.forEach((key, index) => {
+      if (!fieldsByKey.get(key)?.required) {
+        context.addIssue({
+          code: "custom",
+          message: "Missing Field Keys must identify configured Required Extraction Fields.",
+          path: ["missingRequiredFieldKeys", index],
+        })
+      }
+    })
+  })
+
 export const cancelScrapeRunResponseSchema = z
   .object({
     id: positiveIntegerSchema,
@@ -228,6 +357,7 @@ export type ScrapeRunField = z.infer<typeof scrapeRunFieldSchema>
 export type ScrapeRunStageState = z.infer<typeof scrapeRunStageStateSchema>
 export type ScrapeJobSummary = z.infer<typeof scrapeJobSummarySchema>
 export type ScrapeRunDetail = z.infer<typeof scrapeRunDetailSchema>
+export type ScrapeJobDetail = z.infer<typeof scrapeJobDetailSchema>
 export type CancelScrapeRunResponse = z.infer<
   typeof cancelScrapeRunResponseSchema
 >
@@ -355,6 +485,33 @@ export async function fetchScrapeRunDetail(
   }
 
   return validatedResponse(response, scrapeRunDetailSchema)
+}
+
+export async function fetchScrapeJobDetail(
+  url: string,
+  expectedRunId: number,
+  expectedJobId: number,
+): Promise<ScrapeJobDetail> {
+  const response = await fetchResponse(
+    url,
+    undefined,
+    "Unable to load the scrape job.",
+  )
+
+  if (!response.ok) {
+    throw await scrapeRunApiErrorFromResponse(response)
+  }
+
+  const detail = await validatedResponse(response, scrapeJobDetailSchema)
+
+  if (
+    detail.scrapeRun.id !== expectedRunId ||
+    detail.id !== expectedJobId
+  ) {
+    throw invalidResponseError(response)
+  }
+
+  return detail
 }
 
 export async function cancelScrapeRun(
