@@ -1,4 +1,5 @@
 import type {
+  ScrapeJobDetail,
   ScrapeRunDetail,
   ScrapeRunSummary,
 } from "@/lib/scrape-runs/api-contracts"
@@ -21,6 +22,43 @@ export const validScrapeRunSummary = {
   startedAt: "2026-04-01T10:01:00.000Z",
   finishedAt: null,
 } satisfies ScrapeRunSummary
+
+export const validScrapeJobDetail = {
+  id: 31,
+  url: "https://www.example.com/customers/acme",
+  status: "in_progress",
+  attemptCount: 0,
+  result: null,
+  missingRequiredFieldKeys: null,
+  failureCode: null,
+  failureMessage: null,
+  createdAt: "2026-04-01T10:02:00.000Z",
+  updatedAt: "2026-04-01T10:03:00.000Z",
+  startedAt: "2026-04-01T10:02:10.000Z",
+  finishedAt: null,
+  scrapeRun: {
+    id: 17,
+    name: "Customer stories",
+  },
+  fields: [
+    {
+      position: 0,
+      label: "Client Name",
+      key: "client_name",
+      description: "The customer name",
+      required: true,
+      primaryIdentifier: true,
+    },
+    {
+      position: 1,
+      label: "Industry",
+      key: "industry",
+      description: "The customer industry",
+      required: false,
+      primaryIdentifier: false,
+    },
+  ],
+} satisfies ScrapeJobDetail
 
 export const validScrapeRunDetail = {
   ...validScrapeRunSummary,

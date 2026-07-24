@@ -6,6 +6,7 @@ import {
   type ScrapeRunStatus,
 } from "@/lib/scrape-runs/contracts"
 import type {
+  ScrapeJobDetail,
   ScrapeJobSummary,
   ScrapeRunField,
   ScrapeRunJobCounts,
@@ -59,6 +60,24 @@ export function getScrapeRunStageStatusLabel(
 
 export function getScrapeJobStatusLabel(status: ScrapeJobStatus) {
   return STATUS_LABELS[status]
+}
+
+export function isActiveScrapeJob(job: ScrapeJobDetail) {
+  return job.status === "pending" || job.status === "in_progress"
+}
+
+export function getScrapeJobHeading(job: ScrapeJobDetail) {
+  if (job.status !== "complete" || job.result === null) {
+    return "Scrape Job"
+  }
+
+  const primaryIdentifier = job.fields.find(
+    (field) => field.primaryIdentifier,
+  )
+
+  return primaryIdentifier
+    ? (job.result[primaryIdentifier.key] ?? "Scrape Job")
+    : "Scrape Job"
 }
 
 export function getFinishedJobCount(jobCounts: ScrapeRunJobCounts) {
