@@ -85,7 +85,7 @@ export default async function SignInPage() {
       <main className="relative isolate flex min-h-[calc(100vh-4rem)] items-center px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
         <div
           aria-hidden="true"
-          className="absolute inset-0 -z-10 bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-25 [mask-image:linear-gradient(to_bottom,black,transparent_72%)]"
+          className="absolute inset-0 -z-10 bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] bg-size-[4rem_4rem] opacity-25 mask-[linear-gradient(to_bottom,black,transparent_72%)]"
         />
 
         <div className="mx-auto grid w-full max-w-6xl items-center gap-10 lg:grid-cols-[minmax(0,1fr)_25rem] lg:items-end lg:gap-20">
