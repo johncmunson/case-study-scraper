@@ -36,6 +36,10 @@ _Avoid_: Cancelled stage, failed stage
 A user’s instruction to stop an active scrape run. The run remains active until in-flight work is contained and cancellation finishes.
 _Avoid_: Cancelled run, immediate termination
 
+**Run Deletion**:
+The irreversible removal of a terminal Scrape Run and all of its associated configuration, stages, jobs, results, and datasets.
+_Avoid_: Archive, soft delete
+
 **Run Status**:
 The current lifecycle classification determined by preparation and scrape-job outcomes. Mixed successful and failed jobs produce a completed scrape run.
 _Avoid_: Workflow status, manually assigned outcome
