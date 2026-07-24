@@ -129,7 +129,7 @@ export function ScrapeRunDetailHeader({
         </div>
       </div>
 
-      <dl className="grid grid-cols-[max-content_minmax(0,1fr)] gap-x-3 gap-y-1 text-sm text-muted-foreground sm:grid-cols-[repeat(2,max-content_minmax(0,1fr))] sm:gap-x-4">
+      <dl className="grid grid-cols-[max-content_minmax(0,1fr)] gap-x-3 gap-y-1 text-sm text-muted-foreground sm:grid-cols-[repeat(2,max-content_minmax(0,1fr))] sm:gap-x-4 lg:grid-cols-[repeat(3,max-content_minmax(0,1fr))]">
         <RunTimestamp label="Created" timestamp={run.createdAt} />
         {run.startedAt && (
           <RunTimestamp label="Started" timestamp={run.startedAt} />
