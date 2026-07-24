@@ -156,7 +156,7 @@ export function ScrapeJobDetailView({
   runId: string
   jobId: string
 }) {
-  const { mutate: mutateCache } = useSWRConfig()
+  const { cache, mutate: mutateCache } = useSWRConfig()
   const [notFound, setNotFound] = useState(false)
   const detailPath = getScrapeJobDetailApiPath(runId, jobId)
   const expectedRunId = Number(runId)
@@ -176,6 +176,32 @@ export function ScrapeJobDetailView({
       revalidateOnFocus: true,
       revalidateOnReconnect: true,
       shouldRetryOnError: isRecoverableDetailError,
+      onErrorRetry: (
+        detailError,
+        key,
+        configuration,
+        revalidate,
+        revalidateOptions,
+      ) => {
+        if (
+          configuration.errorRetryCount !== undefined &&
+          revalidateOptions.retryCount > configuration.errorRetryCount
+        ) {
+          return
+        }
+
+        const retryExponent = Math.min(revalidateOptions.retryCount, 8)
+        const retryDelay =
+          Math.trunc(
+            (Math.random() + 0.5) * (1 << retryExponent),
+          ) * configuration.errorRetryInterval
+
+        setTimeout(() => {
+          if (cache.get(key)?.error === detailError) {
+            revalidate(revalidateOptions)
+          }
+        }, retryDelay)
+      },
       onError: (detailError) => {
         if (detailError.status === 404) {
           setNotFound(true)

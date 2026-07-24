@@ -325,10 +325,12 @@ describe("scrape-run read routes", () => {
     ["bad-run", "31"],
     ["0", "31"],
     ["-1", "31"],
+    ["17.5", "31"],
     ["9007199254740992", "31"],
     ["17", "bad-job"],
     ["17", "0"],
     ["17", "-1"],
+    ["17", "31.5"],
     ["17", "9007199254740992"],
   ])("returns the private 404 for invalid nested IDs %s/%s", async (runId, jobId) => {
     const response = await getScrapeJob(

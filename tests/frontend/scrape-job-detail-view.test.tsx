@@ -204,8 +204,16 @@ describe("Scrape Job detail loading and errors", () => {
     expect(screen.queryByText("Couldn’t refresh scrape job")).not.toBeInTheDocument()
   })
 
-  it("discards cached detail when a background refresh returns 404", async () => {
+  it("discards only the unavailable Job cache entry after a background 404", async () => {
     let requestCount = 0
+    const parentListCacheEntry = { data: [validScrapeRunSummary] }
+    const parentDetailCacheEntry = { data: { id: 17, sentinel: "parent detail" } }
+    const otherJobCacheEntry = { data: { id: 32, sentinel: "other job" } }
+    const cache = new Map<string, object>([
+      [SCRAPE_RUNS_API_PATH, parentListCacheEntry],
+      ["/api/scrape-runs/17", parentDetailCacheEntry],
+      ["/api/scrape-runs/17/scrape-jobs/32", otherJobCacheEntry],
+    ])
     server.use(
       http.get(apiUrl, () => {
         requestCount += 1
@@ -218,7 +226,7 @@ describe("Scrape Job detail loading and errors", () => {
       }),
     )
 
-    renderDetail()
+    renderDetail({ provider: () => cache })
 
     expect(
       await screen.findByText("Extracting data from this page"),
@@ -229,8 +237,61 @@ describe("Scrape Job detail loading and errors", () => {
       await screen.findByRole("heading", { name: "Scrape Job not found" }),
     ).toBeInTheDocument()
     expect(screen.queryByText("Extracting data from this page")).not.toBeInTheDocument()
+    expect(cache.get(SCRAPE_RUNS_API_PATH)).toBe(parentListCacheEntry)
+    expect(cache.get("/api/scrape-runs/17")).toBe(parentDetailCacheEntry)
+    expect(cache.get("/api/scrape-runs/17/scrape-jobs/32")).toBe(
+      otherJobCacheEntry,
+    )
     await delay(25)
     expect(requestCount).toBe(2)
+  })
+
+  it("does not replace cached detail with a malformed successful response", async () => {
+    let requestCount = 0
+    server.use(
+      http.get(apiUrl, () => {
+        requestCount += 1
+        if (requestCount === 1) return HttpResponse.json(validScrapeJobDetail)
+        if (requestCount === 2) {
+          return HttpResponse.json(
+            detail({
+              id: 32,
+              status: "complete",
+              result: { client_name: "Injected", industry: null },
+              finishedAt: "2026-04-01T10:04:00.000Z",
+            }),
+          )
+        }
+        return HttpResponse.json(
+          detail({
+            status: "complete",
+            result: { client_name: "Acme", industry: "Manufacturing" },
+            finishedAt: "2026-04-01T10:04:00.000Z",
+          }),
+        )
+      }),
+    )
+
+    renderDetail({ errorRetryCount: 0 })
+
+    expect(
+      await screen.findByText("Extracting data from this page"),
+    ).toBeInTheDocument()
+    window.dispatchEvent(new Event("online"))
+    await waitFor(() => expect(requestCount).toBe(2))
+
+    expect(screen.getByText("Extracting data from this page")).toBeInTheDocument()
+    expect(screen.queryByRole("heading", { name: "Injected" })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole("heading", { name: "Extraction Result" }),
+    ).not.toBeInTheDocument()
+
+    window.dispatchEvent(new Event("online"))
+    await waitFor(() => expect(requestCount).toBe(3))
+    expect(screen.getByRole("heading", { name: "Acme" })).toBeInTheDocument()
+    expect(
+      screen.getByRole("heading", { name: "Extraction Result" }),
+    ).toBeInTheDocument()
   })
 })
 
@@ -347,6 +408,23 @@ describe("Scrape Job lifecycle shell", () => {
       screen.getByRole("heading", { name: "Extraction Result" }),
     ).toBeInTheDocument()
     expect(screen.getByText("Manufacturing")).toBeInTheDocument()
+  })
+
+  it("supports keyboard navigation through breadcrumbs and the source link", async () => {
+    server.use(
+      http.get(apiUrl, () => HttpResponse.json(validScrapeJobDetail)),
+    )
+    const user = userEvent.setup()
+
+    renderDetail()
+
+    await screen.findByRole("heading", { name: "Scrape Job" })
+    await user.tab()
+    expect(screen.getByRole("link", { name: "Scrape Runs" })).toHaveFocus()
+    await user.tab()
+    expect(screen.getByRole("link", { name: "Customer stories" })).toHaveFocus()
+    await user.tab()
+    expect(screen.getByRole("link", { name: /Open page/ })).toHaveFocus()
   })
 
   it("renders a failed outcome without exposing a partial result", async () => {
@@ -471,6 +549,49 @@ describe("Scrape Job detail polling", () => {
     ).not.toBeInTheDocument()
   })
 
+  it("replaces an active snapshot with one failed snapshot and stops polling", async () => {
+    vi.useFakeTimers()
+    let requestCount = 0
+    server.use(
+      http.get(apiUrl, () => {
+        requestCount += 1
+        return HttpResponse.json(
+          requestCount === 1
+            ? validScrapeJobDetail
+            : detail({
+                status: "failed",
+                failureCode: "missing_required_fields",
+                failureMessage: "A required value was not found.",
+                missingRequiredFieldKeys: ["client_name"],
+                finishedAt: "2026-04-01T10:04:00.000Z",
+              }),
+        )
+      }),
+    )
+
+    renderDetail()
+
+    await vi.waitFor(() => expect(requestCount).toBe(1))
+    expect(screen.getByText("Extracting data from this page")).toBeInTheDocument()
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3_000)
+    })
+    await vi.waitFor(() => expect(requestCount).toBe(2))
+
+    expect(
+      screen.getByRole("heading", { name: "Scrape Job failed" }),
+    ).toBeInTheDocument()
+    expect(screen.getByText("Client Name")).toBeInTheDocument()
+    expect(screen.queryByText("client_name")).not.toBeInTheDocument()
+    expect(
+      screen.queryByText("Extracting data from this page"),
+    ).not.toBeInTheDocument()
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(9_000)
+    })
+    expect(requestCount).toBe(2)
+  })
+
   it("suspends polling during an error retry and resumes after success", async () => {
     vi.useFakeTimers()
     vi.spyOn(Math, "random").mockReturnValue(0)
@@ -500,6 +621,46 @@ describe("Scrape Job detail polling", () => {
       await vi.advanceTimersByTimeAsync(6_999)
     })
     await vi.waitFor(() => expect(requestCount).toBe(3))
+  })
+
+  it("does not run a scheduled retry after manual Retry reaches a terminal state", async () => {
+    vi.useFakeTimers()
+    vi.spyOn(Math, "random").mockReturnValue(0)
+    let requestCount = 0
+    server.use(
+      http.get(apiUrl, () => {
+        requestCount += 1
+        if (requestCount === 1) return HttpResponse.json(validScrapeJobDetail)
+        if (requestCount === 2) {
+          return HttpResponse.json({ error: "Unavailable." }, { status: 503 })
+        }
+        return HttpResponse.json(
+          detail({
+            status: "complete",
+            result: { client_name: "Acme", industry: "Manufacturing" },
+            finishedAt: "2026-04-01T10:04:00.000Z",
+          }),
+        )
+      }),
+    )
+
+    renderDetail({ errorRetryInterval: 10_000 })
+
+    await vi.waitFor(() => expect(requestCount).toBe(1))
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3_000)
+    })
+    await vi.waitFor(() => expect(requestCount).toBe(2))
+    await act(async () => {
+      screen.getByRole("button", { name: "Retry" }).click()
+    })
+    await vi.waitFor(() => expect(requestCount).toBe(3))
+    expect(screen.getByRole("heading", { name: "Acme" })).toBeInTheDocument()
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(20_000)
+    })
+    expect(requestCount).toBe(3)
   })
 
   it("cleans polling and retry timers up on unmount", async () => {
