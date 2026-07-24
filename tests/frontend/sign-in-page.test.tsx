@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react"
+import { render, screen, within } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import SignInPage, { metadata } from "@/app/sign-in/page"
@@ -44,9 +44,11 @@ describe("sign-in page", () => {
       "href",
       "/",
     )
-    expect(screen.getByText("Find matching pages")).toBeInTheDocument()
-    expect(screen.getByText("Extract chosen fields")).toBeInTheDocument()
-    expect(screen.getByText("Download CSV or JSON")).toBeInTheDocument()
+    const workflow = screen.getByRole("list", { name: "Three-step workflow" })
+    expect(within(workflow).getAllByRole("listitem")).toHaveLength(3)
+    expect(within(workflow).getByText("Find matching pages")).toBeInTheDocument()
+    expect(within(workflow).getByText("Extract chosen fields")).toBeInTheDocument()
+    expect(within(workflow).getByText("Download CSV or JSON")).toBeInTheDocument()
   })
 
   it("redirects an existing session to the authenticated app", async () => {

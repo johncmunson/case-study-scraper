@@ -104,16 +104,19 @@ export default async function SignInPage() {
               structured Extraction Results—ready for analysis.
             </p>
 
-            <ul className="mt-9 hidden grid-cols-3 gap-3 lg:grid">
+            <ul
+              aria-label="Three-step workflow"
+              className="mt-7 grid grid-cols-3 gap-2 lg:mt-9 lg:gap-3"
+            >
               {capabilities.map((capability, index) => (
                 <li
                   key={capability}
-                  className="rounded-xl border bg-background/80 p-4 shadow-xs"
+                  className="rounded-xl border bg-background/80 p-2.5 shadow-xs sm:p-4"
                 >
                   <span className="flex size-6 items-center justify-center rounded-full bg-blue-50 text-blue-800">
                     <Check aria-hidden="true" className="size-3.5" />
                   </span>
-                  <p className="mt-4 text-sm leading-5 font-medium">
+                  <p className="mt-3 text-xs leading-4 font-medium sm:mt-4 sm:text-sm sm:leading-5">
                     {capability}
                   </p>
                   <p className="mt-1 font-mono text-[0.65rem] tracking-[0.14em] text-muted-foreground uppercase">
