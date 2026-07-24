@@ -84,6 +84,10 @@ _Avoid_: `NOT_FOUND`, absent property, empty string
 The normalized user-defined values produced by a successful scrape job. Firecrawl response metadata and page content are not part of the result.
 _Avoid_: Metadata, raw response, page content
 
+**Extraction Dataset**:
+The collection of successful Extraction Results from one Scrape Run, with each result associated with its Canonical Page URL. Run configuration, lifecycle state, and failure diagnostics are not part of the dataset.
+_Avoid_: Full scrape run, operational archive
+
 **Primary Identifier**:
 The required extracted field used to name and reference a successful result. Its value is not required to be unique within a scrape run.
 _Avoid_: Unique key, database identifier
