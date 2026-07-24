@@ -1,7 +1,11 @@
 "use client"
 
-import { EyeIcon } from "lucide-react"
-import { useState } from "react"
+import { Code2Icon, EyeIcon } from "lucide-react"
+import { type ComponentProps, useState } from "react"
+import ReactMarkdown, {
+  defaultUrlTransform,
+  type ExtraProps,
+} from "react-markdown"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -29,12 +33,53 @@ function isMarkdownCandidate(fieldKey: string, value: string | null) {
   )
 }
 
+function resolveMarkdownUrl(url: string, canonicalPageUrl: string) {
+  const safeUrl = defaultUrlTransform(url)
+
+  if (safeUrl === "") return undefined
+
+  try {
+    return new URL(safeUrl, canonicalPageUrl).href
+  } catch {
+    return undefined
+  }
+}
+
+function MarkdownLink({ href, ...props }: ComponentProps<"a">) {
+  const opensNewTab =
+    href?.startsWith("http://") || href?.startsWith("https://")
+
+  return (
+    <a
+      {...props}
+      className="wrap-anywhere text-foreground underline underline-offset-4 hover:text-primary hover:decoration-primary focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+      href={href}
+      rel={opensNewTab ? "noopener noreferrer" : undefined}
+      target={opensNewTab ? "_blank" : undefined}
+    />
+  )
+}
+
+function CompactMarkdownHeading({
+  node: _node,
+  ...props
+}: ComponentProps<"h6"> & ExtraProps) {
+  return (
+    <h6
+      className="mt-2 wrap-anywhere text-sm font-semibold first:mt-0"
+      {...props}
+    />
+  )
+}
+
 function MarkdownAction({
   candidate,
-  onRender,
+  renderMarkdown,
+  onToggle,
 }: {
   candidate: boolean
-  onRender: () => void
+  renderMarkdown: boolean
+  onToggle: () => void
 }) {
   if (!candidate) {
     return (
@@ -52,34 +97,42 @@ function MarkdownAction({
     )
   }
 
+  const label = renderMarkdown ? "Show raw text" : "Render Markdown"
+
   return (
     <Tooltip>
       <TooltipTrigger
         render={
           <Button
-            aria-label="Render Markdown"
-            onClick={onRender}
+            aria-label={label}
+            onClick={onToggle}
             size="icon-sm"
             type="button"
-            variant="outline"
+            variant={renderMarkdown ? "secondary" : "outline"}
           />
         }
       >
-        <EyeIcon aria-hidden="true" />
+        {renderMarkdown ? (
+          <Code2Icon aria-hidden="true" />
+        ) : (
+          <EyeIcon aria-hidden="true" />
+        )}
       </TooltipTrigger>
-      <TooltipContent>Render Markdown</TooltipContent>
+      <TooltipContent>{label}</TooltipContent>
     </Tooltip>
   )
 }
 
 function ExtractionResultField({
+  canonicalPageUrl,
   field,
   value,
 }: {
+  canonicalPageUrl: string
   field: ExtractionField
   value: string | null
 }) {
-  const [, setRenderMarkdown] = useState(false)
+  const [renderMarkdown, setRenderMarkdown] = useState(false)
   const candidate = isMarkdownCandidate(field.key, value)
 
   return (
@@ -105,7 +158,8 @@ function ExtractionResultField({
           >
             <MarkdownAction
               candidate={candidate}
-              onRender={() =>
+              renderMarkdown={renderMarkdown}
+              onToggle={() =>
                 setRenderMarkdown((renderMarkdown) => !renderMarkdown)
               }
             />
@@ -115,9 +169,102 @@ function ExtractionResultField({
           {field.description}
         </span>
       </dt>
-      <dd className="min-w-0 wrap-anywhere whitespace-pre-wrap select-text sm:pt-0.5">
+      <dd
+        className={
+          renderMarkdown
+            ? "min-w-0 select-text sm:pt-0.5"
+            : "min-w-0 wrap-anywhere whitespace-pre-wrap select-text sm:pt-0.5"
+        }
+      >
         {value === null ? (
           <span className="text-muted-foreground">Not found</span>
+        ) : renderMarkdown ? (
+          <ReactMarkdown
+            urlTransform={(url) => resolveMarkdownUrl(url, canonicalPageUrl)}
+            components={{
+              a: ({ node: _node, ...props }) => (
+                <MarkdownLink {...props} />
+              ),
+              img: ({ node: _node, alt, src, title }) => {
+                const source = typeof src === "string" ? src : undefined
+
+                return (
+                  <span className="wrap-anywhere">
+                    <span>{alt || "Image"}</span>
+                    {source && (
+                      <>
+                        {" ("}
+                        <MarkdownLink href={source} title={title}>
+                          {source}
+                        </MarkdownLink>
+                        {")"}
+                      </>
+                    )}
+                  </span>
+                )
+              },
+              h1: ({ node: _node, ...props }) => (
+                <h4
+                  className="mt-3 wrap-anywhere text-base font-semibold first:mt-0"
+                  {...props}
+                />
+              ),
+              h2: ({ node: _node, ...props }) => (
+                <h5
+                  className="mt-3 wrap-anywhere text-sm font-semibold first:mt-0"
+                  {...props}
+                />
+              ),
+              h3: CompactMarkdownHeading,
+              h4: CompactMarkdownHeading,
+              h5: CompactMarkdownHeading,
+              h6: CompactMarkdownHeading,
+              p: ({ node: _node, ...props }) => (
+                <p
+                  className="my-2 wrap-anywhere leading-relaxed first:mt-0 last:mb-0"
+                  {...props}
+                />
+              ),
+              ul: ({ node: _node, ...props }) => (
+                <ul
+                  className="my-2 list-disc space-y-1 pl-5 first:mt-0 last:mb-0"
+                  {...props}
+                />
+              ),
+              ol: ({ node: _node, ...props }) => (
+                <ol
+                  className="my-2 list-decimal space-y-1 pl-5 first:mt-0 last:mb-0"
+                  {...props}
+                />
+              ),
+              li: ({ node: _node, ...props }) => (
+                <li className="wrap-anywhere pl-0.5" {...props} />
+              ),
+              blockquote: ({ node: _node, ...props }) => (
+                <blockquote
+                  className="my-2 border-l-2 border-border pl-3 text-muted-foreground first:mt-0 last:mb-0"
+                  {...props}
+                />
+              ),
+              hr: ({ node: _node, ...props }) => (
+                <hr className="my-3 border-border" {...props} />
+              ),
+              code: ({ node: _node, className, ...props }) => (
+                <code
+                  className={`wrap-anywhere rounded bg-muted px-1 py-0.5 font-mono text-[0.875em] ${className ?? ""}`}
+                  {...props}
+                />
+              ),
+              pre: ({ node: _node, ...props }) => (
+                <pre
+                  className="my-2 max-w-full overflow-x-auto rounded-md bg-muted p-3 text-xs first:mt-0 last:mb-0 [&>code]:wrap-normal [&>code]:whitespace-pre [&>code]:bg-transparent [&>code]:p-0"
+                  {...props}
+                />
+              ),
+            }}
+          >
+            {value}
+          </ReactMarkdown>
         ) : (
           value
         )}
@@ -147,6 +294,7 @@ export function ScrapeJobResult({ job }: { job: ScrapeJobDetail }) {
             {job.fields.map((field) => (
               <ExtractionResultField
                 key={field.key}
+                canonicalPageUrl={job.url}
                 field={field}
                 value={result[field.key]}
               />

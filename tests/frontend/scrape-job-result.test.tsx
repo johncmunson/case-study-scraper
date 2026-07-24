@@ -1,4 +1,5 @@
 import { render, screen, within } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { describe, expect, it } from "vitest"
 
 import { ScrapeJobResult } from "@/components/scrape-runs/scrape-job-result"
@@ -222,6 +223,246 @@ describe("Scrape Job Extraction Result", () => {
     )
     expect(placeholderButton).toHaveAttribute("aria-hidden", "true")
     expect(placeholderButton).toHaveAttribute("tabindex", "-1")
+  })
+
+  it("toggles one Markdown Candidate between exact raw text and rendered CommonMark independently", async () => {
+    const user = userEvent.setup()
+    const firstValue = "# Customer story\r\n\r\nThis is **important**."
+    const secondValue = "# Second story\n\nStill raw."
+
+    render(
+      <ScrapeJobResult
+        job={completeDetail({
+          fields: [
+            extractionField("first_markdown", "First", 0),
+            extractionField("second_markdown", "Second", 1),
+          ],
+          result: {
+            first_markdown: firstValue,
+            second_markdown: secondValue,
+          },
+        })}
+      />,
+    )
+
+    const firstDefinition = fieldItem("First").term.nextElementSibling
+    const secondDefinition = fieldItem("Second").term.nextElementSibling
+    const firstRenderButton = within(fieldItem("First").item).getByRole(
+      "button",
+      { name: "Render Markdown" },
+    )
+
+    expect(firstDefinition?.textContent).toBe(firstValue)
+    expect(secondDefinition?.textContent).toBe(secondValue)
+    expect(screen.queryByRole("heading", { name: "Customer story" })).not.toBeInTheDocument()
+    expect(firstRenderButton).toHaveClass("bg-background")
+    expect(firstRenderButton.querySelector("svg")).toHaveClass("lucide-eye")
+
+    await user.click(firstRenderButton)
+
+    expect(
+      within(firstDefinition as HTMLElement).getByRole("heading", {
+        level: 4,
+        name: "Customer story",
+      }),
+    ).toBeInTheDocument()
+    expect(within(firstDefinition as HTMLElement).getByText("important").tagName).toBe(
+      "STRONG",
+    )
+    const showRawButton = within(fieldItem("First").item).getByRole("button", {
+      name: "Show raw text",
+    })
+    expect(showRawButton).toHaveClass("bg-secondary")
+    expect(showRawButton.querySelector("svg")).toHaveClass("lucide-code-xml")
+    expect(
+      within(fieldItem("Second").item).getByRole("button", {
+        name: "Render Markdown",
+      }),
+    ).toBeInTheDocument()
+    expect(secondDefinition?.textContent).toBe(secondValue)
+
+    await user.click(showRawButton)
+
+    expect(firstDefinition?.textContent).toBe(firstValue)
+    expect(
+      within(firstDefinition as HTMLElement).queryByRole("heading"),
+    ).not.toBeInTheDocument()
+    expect(
+      within(fieldItem("First").item).getByRole("button", {
+        name: "Render Markdown",
+      }),
+    ).toBeInTheDocument()
+  })
+
+  it("resolves safe links against the Canonical Page URL with protocol-specific behavior", async () => {
+    const user = userEvent.setup()
+    const markdown = [
+      "[Relative](related?view=full#results)",
+      "[Secure](https://docs.example.org/guide)",
+      "[Email](mailto:researcher@example.com)",
+      "[Unsafe](javascript:alert(1))",
+    ].join(" ")
+
+    render(
+      <ScrapeJobResult
+        job={completeDetail({
+          fields: [extractionField("links_markdown", "Links", 0)],
+          result: { links_markdown: markdown },
+        })}
+      />,
+    )
+
+    await user.click(
+      screen.getByRole("button", { name: "Render Markdown" }),
+    )
+
+    expect(screen.getByRole("link", { name: "Relative" })).toHaveAttribute(
+      "href",
+      "https://www.example.com/customers/related?view=full#results",
+    )
+    for (const name of ["Relative", "Secure"]) {
+      expect(screen.getByRole("link", { name })).toHaveAttribute(
+        "target",
+        "_blank",
+      )
+      expect(screen.getByRole("link", { name })).toHaveAttribute(
+        "rel",
+        "noopener noreferrer",
+      )
+    }
+
+    const email = screen.getByRole("link", { name: "Email" })
+    expect(email).toHaveAttribute("href", "mailto:researcher@example.com")
+    expect(email).not.toHaveAttribute("target")
+    expect(email).not.toHaveAttribute("rel")
+
+    const unsafe = screen.getByText("Unsafe").closest("a")
+    expect(unsafe).toBeInTheDocument()
+    expect(unsafe).not.toHaveAttribute("href")
+  })
+
+  it("renders image alt text with only safe source links and keeps embedded HTML inert", async () => {
+    const user = userEvent.setup()
+    const markdown = [
+      "![Architecture diagram](assets/diagram.png)",
+      "",
+      "![Unsafe image](javascript:alert(1))",
+      "",
+      '<div data-live="yes">Embedded **HTML**</div>',
+    ].join("\n")
+
+    const { container } = render(
+      <ScrapeJobResult
+        job={completeDetail({
+          fields: [extractionField("media_markdown", "Media", 0)],
+          result: { media_markdown: markdown },
+        })}
+      />,
+    )
+
+    await user.click(
+      screen.getByRole("button", { name: "Render Markdown" }),
+    )
+
+    expect(container.querySelector("img")).not.toBeInTheDocument()
+    expect(screen.getByText("Architecture diagram")).toBeInTheDocument()
+    const source = screen.getByRole("link", {
+      name: "https://www.example.com/customers/assets/diagram.png",
+    })
+    expect(source).toHaveAttribute(
+      "href",
+      "https://www.example.com/customers/assets/diagram.png",
+    )
+    expect(source).toHaveAttribute("target", "_blank")
+    expect(source).toHaveAttribute("rel", "noopener noreferrer")
+
+    expect(screen.getByText("Unsafe image")).toBeInTheDocument()
+    expect(screen.queryByRole("link", { name: /javascript/i })).not.toBeInTheDocument()
+    expect(container.querySelector('[data-live="yes"]')).not.toBeInTheDocument()
+    expect(container.querySelector("script")).not.toBeInTheDocument()
+    expect(screen.getByText(/<div data-live="yes">/)).toBeInTheDocument()
+  })
+
+  it("renders compact CommonMark prose and code with remapped headings and bounded overflow", async () => {
+    const user = userEvent.setup()
+    const markdown = [
+      "## Secondary heading",
+      "",
+      "### Tertiary heading",
+      "",
+      "#### Quaternary heading",
+      "",
+      "##### Quinary heading",
+      "",
+      "###### Senary heading",
+      "",
+      "Paragraph with *emphasis*, `inline code`, and a",
+      "single newline.",
+      "",
+      "- First item",
+      "- Second item",
+      "",
+      "1. First step",
+      "2. Second step",
+      "",
+      "> A compact quote",
+      "",
+      "---",
+      "",
+      "```ts",
+      "const unbroken = 'abcdefghijklmnopqrstuvwxyz';",
+      "  preserve indentation",
+      "```",
+    ].join("\n")
+
+    render(
+      <ScrapeJobResult
+        job={completeDetail({
+          fields: [extractionField("summary_markdown", "Summary", 0)],
+          result: { summary_markdown: markdown },
+        })}
+      />,
+    )
+
+    await user.click(
+      screen.getByRole("button", { name: "Render Markdown" }),
+    )
+
+    const definition = fieldItem("Summary").term.nextElementSibling as HTMLElement
+    expect(
+      within(definition).getByRole("heading", {
+        level: 5,
+        name: "Secondary heading",
+      }),
+    ).toHaveClass("wrap-anywhere")
+    for (const name of [
+      "Tertiary heading",
+      "Quaternary heading",
+      "Quinary heading",
+      "Senary heading",
+    ]) {
+      expect(
+        within(definition).getByRole("heading", { level: 6, name }),
+      ).toBeInTheDocument()
+    }
+
+    const paragraph = within(definition).getByText(/Paragraph with/).closest("p")
+    expect(paragraph).toHaveClass("wrap-anywhere")
+    expect(paragraph?.querySelector("em")).toHaveTextContent("emphasis")
+    expect(paragraph?.querySelector("code")).toHaveClass("wrap-anywhere")
+    expect(paragraph?.querySelector("br")).not.toBeInTheDocument()
+
+    expect(definition.querySelector("ul")).toHaveClass("list-disc")
+    expect(definition.querySelector("ol")).toHaveClass("list-decimal")
+    expect(definition.querySelector("blockquote")).toHaveClass("border-l-2")
+    expect(definition.querySelector("hr")).toHaveClass("border-border")
+
+    const fencedCode = definition.querySelector("pre")
+    expect(fencedCode).toHaveClass("max-w-full", "overflow-x-auto")
+    expect(fencedCode?.querySelector("code")).toHaveClass("language-ts")
+    expect(fencedCode?.querySelector("code")?.textContent).toBe(
+      "const unbroken = 'abcdefghijklmnopqrstuvwxyz';\n  preserve indentation\n",
+    )
   })
 
   it("keeps long labels, descriptions, and candidate raw text readable and exact", () => {
