@@ -93,12 +93,19 @@ describe("Scrape Job summary table", () => {
       "false",
     )
     expect(within(table).queryByText("Must not be shown")).not.toBeInTheDocument()
-    expect(within(table).getByText("missing_required_fields")).toBeInTheDocument()
+    expect(within(table).queryByText("missing_required_fields")).not.toBeInTheDocument()
     expect(within(table).getByText("2")).toBeInTheDocument()
+
+    const failedRow = within(table).getAllByRole("row")[2]
+    expect(
+      within(failedRow).getByRole("link", { name: "Client Name: Not available" }),
+    ).toHaveAttribute("href", "/app/scrape-runs/17/scrape-jobs/42")
+    expect(
+      within(failedRow).getByRole("link", { name: "Client Name: Not available" }),
+    ).toHaveTextContent("—")
 
     const finishedTime = within(table).getAllByText((_, element) => element?.tagName === "TIME")[0]
     expect(finishedTime).toHaveAttribute("datetime", "2026-04-01T10:03:00.000Z")
-    expect(within(table).getAllByText("—").length).toBeGreaterThan(0)
 
     const urlLinks = within(table).getAllByRole("link", {
       name: "https://www.example.com/customers/customer-41",
@@ -119,7 +126,7 @@ describe("Scrape Job summary table", () => {
     expect(container.querySelector('[data-column="finished"]')).toHaveClass("hidden")
   })
 
-  it("keeps long labels, identifiers, URLs, and diagnostics accessible on narrow layouts", async () => {
+  it("keeps long labels, identifiers, and URLs accessible on narrow layouts", async () => {
     const longLabel = "Customer organization and international division ".repeat(4).trim()
     const longIdentifier = "AcmeInternationalCustomerIdentifier".repeat(8)
     const longUrl = `https://www.example.com/customers/${"long-path-segment".repeat(12)}`
@@ -156,9 +163,10 @@ describe("Scrape Job summary table", () => {
     urlLink.focus()
     expect(urlLink).toHaveFocus()
     expect(await screen.findByRole("tooltip")).toHaveTextContent(longUrl)
-    const failureCode = screen.getByText("missing_required_fields")
-    expect(failureCode.closest("p")).toHaveClass("wrap-anywhere")
-    expect(failureCode.closest("td")).toHaveClass("whitespace-normal")
+    expect(screen.queryByText("missing_required_fields")).not.toBeInTheDocument()
+    expect(
+      screen.getByRole("link", { name: `${longLabel}: Not available` }),
+    ).toHaveAttribute("href", "/app/scrape-runs/17/scrape-jobs/42")
   })
 
   it("shows exact status counts and filters without changing API order", async () => {

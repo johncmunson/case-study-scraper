@@ -122,19 +122,12 @@ function JobStatus({ job }: { job: ScrapeJobSummary }) {
   const statusLabel = getScrapeJobStatusLabel(job.status)
 
   return (
-    <div className="space-y-1">
-      <Badge
-        aria-label={`Status: ${statusLabel}`}
-        variant={JOB_STATUS_BADGE_VARIANTS[job.status]}
-      >
-        {statusLabel}
-      </Badge>
-      {job.status === "failed" && job.failureCode && (
-        <p className="max-w-40 wrap-anywhere font-mono text-xs text-destructive">
-          <code>{job.failureCode}</code>
-        </p>
-      )}
-    </div>
+    <Badge
+      aria-label={`Status: ${statusLabel}`}
+      variant={JOB_STATUS_BADGE_VARIANTS[job.status]}
+    >
+      {statusLabel}
+    </Badge>
   )
 }
 
@@ -181,7 +174,14 @@ function ScrapeJobRow({
               {job.primaryIdentifier}
             </Link>
           ) : (
-            <span aria-label={`${primaryIdentifierLabel}: Not available`}>—</span>
+            <Link
+              aria-label={`${primaryIdentifierLabel}: Not available`}
+              className="block truncate font-medium text-primary underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              href={getScrapeJobDetailPath(runId, job.id)}
+              prefetch={false}
+            >
+              —
+            </Link>
           )}
           <JobUrlLink
             className="block max-w-full truncate text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:hidden"
