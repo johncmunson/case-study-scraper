@@ -7,7 +7,9 @@ import useSWR, { useSWRConfig } from "swr"
 
 import { ScrapeJobDetailHeader } from "@/components/scrape-runs/scrape-job-detail-header"
 import { ScrapeJobDetailSkeleton } from "@/components/scrape-runs/scrape-job-detail-skeleton"
+import { ScrapeJobFailure } from "@/components/scrape-runs/scrape-job-failure"
 import { ScrapeJobLifecycleState } from "@/components/scrape-runs/scrape-job-lifecycle-state"
+import { ScrapeJobResult } from "@/components/scrape-runs/scrape-job-result"
 import {
   Alert,
   AlertAction,
@@ -207,7 +209,11 @@ export function ScrapeJobDetailView({
       {error && isRecoverableDetailError(error) && (
         <RefreshWarning onRetry={retry} />
       )}
-      {data.status !== "complete" && data.status !== "failed" && (
+      {data.status === "complete" ? (
+        <ScrapeJobResult job={data} />
+      ) : data.status === "failed" ? (
+        <ScrapeJobFailure job={data} />
+      ) : (
         <ScrapeJobLifecycleState status={data.status} />
       )}
     </div>

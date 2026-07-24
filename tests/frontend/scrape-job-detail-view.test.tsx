@@ -343,6 +343,37 @@ describe("Scrape Job lifecycle shell", () => {
       await screen.findByRole("heading", { name: "Acme" }),
     ).toBeInTheDocument()
     expect(screen.getByLabelText("Status: Complete")).toBeInTheDocument()
+    expect(
+      screen.getByRole("heading", { name: "Extraction Result" }),
+    ).toBeInTheDocument()
+    expect(screen.getByText("Manufacturing")).toBeInTheDocument()
+  })
+
+  it("renders a failed outcome without exposing a partial result", async () => {
+    server.use(
+      http.get(apiUrl, () =>
+        HttpResponse.json(
+          detail({
+            status: "failed",
+            failureCode: "missing_required_fields",
+            failureMessage: "A required value was not found.",
+            missingRequiredFieldKeys: ["client_name"],
+            finishedAt: "2026-04-01T10:04:00.000Z",
+          }),
+        ),
+      ),
+    )
+
+    renderDetail()
+
+    expect(
+      await screen.findByRole("heading", { name: "Scrape Job failed" }),
+    ).toBeInTheDocument()
+    expect(screen.getByLabelText("Status: Failed")).toBeInTheDocument()
+    expect(screen.getByText("Client Name")).toBeInTheDocument()
+    expect(
+      screen.queryByRole("heading", { name: "Extraction Result" }),
+    ).not.toBeInTheDocument()
   })
 })
 
@@ -400,6 +431,44 @@ describe("Scrape Job detail polling", () => {
       await vi.advanceTimersByTimeAsync(9_000)
     })
     expect(requestCount).toBe(2)
+  })
+
+  it("replaces the active shell and identity with one complete snapshot", async () => {
+    vi.useFakeTimers()
+    let requestCount = 0
+    server.use(
+      http.get(apiUrl, () => {
+        requestCount += 1
+        return HttpResponse.json(
+          requestCount === 1
+            ? validScrapeJobDetail
+            : detail({
+                status: "complete",
+                result: {
+                  client_name: "Acme",
+                  industry: "Manufacturing",
+                },
+                finishedAt: "2026-04-01T10:04:00.000Z",
+              }),
+        )
+      }),
+    )
+
+    renderDetail()
+
+    await vi.waitFor(() => expect(requestCount).toBe(1))
+    expect(screen.getByText("Extracting data from this page")).toBeInTheDocument()
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3_000)
+    })
+    await vi.waitFor(() => expect(requestCount).toBe(2))
+    expect(screen.getByRole("heading", { name: "Acme" })).toBeInTheDocument()
+    expect(
+      screen.getByRole("heading", { name: "Extraction Result" }),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText("Extracting data from this page"),
+    ).not.toBeInTheDocument()
   })
 
   it("suspends polling during an error retry and resumes after success", async () => {
