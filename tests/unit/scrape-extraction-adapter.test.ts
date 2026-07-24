@@ -152,6 +152,31 @@ describe("Firecrawl Scrape extraction adapter", () => {
     })
   })
 
+  it("rejects extracted values from a page whose origin returned a server error", async () => {
+    server.use(
+      scrapeHandler(() =>
+        HttpResponse.json({
+          success: true,
+          data: {
+            json: { client: "Internal Server Error", sector: null },
+            metadata: {
+              sourceURL: pageUrl,
+              statusCode: 500,
+              error: "Internal Server Error",
+            },
+          },
+        }),
+      ),
+    )
+
+    await expect(
+      scrapePageForExtraction({ pageUrl, fields, apiKey: "fc-test" }),
+    ).rejects.toMatchObject({
+      constructor: RetryableError,
+      message: "Scraping provider request failed transiently.",
+    })
+  })
+
   it("classifies a transient provider failure without hidden SDK retries", async () => {
     const requests = vi.fn()
 

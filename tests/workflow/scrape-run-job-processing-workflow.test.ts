@@ -285,6 +285,80 @@ describe("scrape-run Scraping Workflow", () => {
     ])
   })
 
+  it("fails a scrape job instead of completing it from an origin error page", async () => {
+    const { user, run: pendingRun } = await seedPendingRun()
+    const urls = [
+      "https://example.com/customers/acme",
+      "https://example.com/customers/globex",
+      "https://example.com/blah-blah-blah",
+    ]
+    const calls = new Map<string, number>()
+    usePreparationHandlers(urls)
+    server.use(
+      http.post("https://api.firecrawl.dev/v2/scrape", async ({ request }) => {
+        const { url } = (await request.json()) as { url: string }
+        calls.set(url, (calls.get(url) ?? 0) + 1)
+
+        if (url.endsWith("/blah-blah-blah")) {
+          return HttpResponse.json({
+            success: true,
+            data: {
+              json: { client_name: "Internal Server Error" },
+              metadata: {
+                sourceURL: url,
+                statusCode: 500,
+                error: "Internal Server Error",
+              },
+            },
+          })
+        }
+
+        return successfulScrape({ client_name: "Acme" })
+      }),
+    )
+
+    const workflowRun = await start(scrapeRunWorkflow, [pendingRun.id])
+
+    await expect(workflowRun.returnValue).resolves.toMatchObject({
+      outcome: "complete",
+      jobCount: 3,
+    })
+    expect(calls).toEqual(
+      new Map([
+        [urls[0], 1],
+        [urls[1], 1],
+        [urls[2], 3],
+      ]),
+    )
+    const persistedRun = await findOwnedScrapeRun({
+      userId: user.id,
+      scrapeRunId: pendingRun.id,
+    })
+    const jobs = await db.query.scrapeJobs.findMany({
+      where: (job, { eq }) => eq(job.scrapeRunId, pendingRun.id),
+      orderBy: scrapeJobs.id,
+    })
+
+    expect(persistedRun).toMatchObject({
+      status: "complete",
+      stages: [
+        { stage: "mapping", status: "complete" },
+        { stage: "filtering", status: "complete" },
+        { stage: "scraping", status: "complete" },
+      ],
+    })
+    expect(jobs).toHaveLength(3)
+    expect(jobs.filter((job) => job.status === "complete")).toHaveLength(2)
+    expect(jobs.find((job) => job.url === urls[2])).toEqual(
+      expect.objectContaining({
+        status: "failed",
+        attemptCount: 3,
+        result: null,
+        failureCode: "scrape_failed",
+      }),
+    )
+  })
+
   it("does not call Firecrawl when an already-completed job is replayed", async () => {
     const { run: pendingRun } = await seedPendingRun()
     const urls = [

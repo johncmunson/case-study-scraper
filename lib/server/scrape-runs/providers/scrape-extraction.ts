@@ -1,6 +1,6 @@
 import "server-only"
 
-import Firecrawl from "firecrawl"
+import Firecrawl, { SdkError } from "firecrawl"
 import { FatalError } from "workflow"
 
 import type {
@@ -163,6 +163,14 @@ export async function scrapePageForExtraction({
     const document = await firecrawl.scrape(pageUrl, {
       formats: [{ type: "json", schema }],
     })
+    const originStatusCode = document.metadata?.statusCode
+
+    if (originStatusCode !== undefined && originStatusCode >= 400) {
+      throw new SdkError(
+        "The page returned an unsuccessful HTTP status.",
+        originStatusCode,
+      )
+    }
 
     return normalizeExtractionOutput(document.json, fields)
   } catch (error) {
