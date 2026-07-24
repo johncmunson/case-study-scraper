@@ -47,10 +47,10 @@ function ScrapeRunStageItem({ stage }: { stage: ScrapeRunStageState }) {
   const statusLabel = getScrapeRunStageStatusLabel(stage.status)
 
   return (
-    <li className="relative min-w-0 border-l-2 border-border py-1 pl-5 last:border-transparent">
+    <li className="relative min-w-0 py-1 pl-5 after:absolute after:top-6.5 after:-bottom-6.5 after:-left-0.5 after:w-0.5 after:bg-border last:after:hidden">
       <span
         aria-hidden="true"
-        className="absolute top-2 -left-[7px] size-3 rounded-full border-2 border-background bg-muted-foreground"
+        className="absolute top-5 -left-1.75 z-10 size-3 rounded-full border-2 border-background bg-muted-foreground"
       />
       <div className="space-y-2 rounded-lg border p-3">
         <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
