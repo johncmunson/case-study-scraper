@@ -1,4 +1,4 @@
-import { CircleAlertIcon, CircleCheckIcon, CircleXIcon } from "lucide-react"
+import { CircleAlertIcon, CircleXIcon } from "lucide-react"
 
 import {
   Card,
@@ -21,23 +21,16 @@ const LIFECYCLE_CONTENT = {
       "This page will update automatically while extraction is in progress.",
     icon: CircleAlertIcon,
   },
-  complete: {
-    title: "Extraction complete",
-    description: "The Extraction Result is ready.",
-    icon: CircleCheckIcon,
-  },
-  failed: {
-    title: "Extraction failed",
-    description: "Extraction did not complete for this page.",
-    icon: CircleXIcon,
-  },
   cancelled: {
     title: "Extraction was cancelled before this job finished",
     description: "No Extraction Result was saved for this Scrape Job.",
     icon: CircleXIcon,
   },
 } as const satisfies Record<
-  ScrapeJobDetail["status"],
+  Extract<
+    ScrapeJobDetail["status"],
+    "pending" | "in_progress" | "cancelled"
+  >,
   {
     title: string
     description: string
@@ -48,7 +41,10 @@ const LIFECYCLE_CONTENT = {
 export function ScrapeJobLifecycleState({
   status,
 }: {
-  status: ScrapeJobDetail["status"]
+  status: Extract<
+    ScrapeJobDetail["status"],
+    "pending" | "in_progress" | "cancelled"
+  >
 }) {
   const content = LIFECYCLE_CONTENT[status]
   const Icon = content.icon

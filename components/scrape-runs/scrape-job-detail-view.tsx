@@ -36,7 +36,7 @@ import { cn } from "@/lib/utils"
 const ACTIVE_JOB_REFRESH_INTERVAL = 3_000
 const GET_ERROR_RETRY_COUNT = 3
 
-function shouldRetryDetailRequest(error: ScrapeRunApiError) {
+function isRecoverableDetailError(error: ScrapeRunApiError) {
   return error.status === undefined || error.status >= 500
 }
 
@@ -155,7 +155,7 @@ export function ScrapeJobDetailView({
   jobId: string
 }) {
   const { mutate: mutateCache } = useSWRConfig()
-  const [unavailable, setUnavailable] = useState(false)
+  const [notFound, setNotFound] = useState(false)
   const detailPath = getScrapeJobDetailApiPath(runId, jobId)
   const expectedRunId = Number(runId)
   const expectedJobId = Number(jobId)
@@ -173,15 +173,15 @@ export function ScrapeJobDetailView({
           : 0,
       revalidateOnFocus: true,
       revalidateOnReconnect: true,
-      shouldRetryOnError: shouldRetryDetailRequest,
+      shouldRetryOnError: isRecoverableDetailError,
       onError: (detailError) => {
         if (detailError.status === 404) {
-          setUnavailable(true)
+          setNotFound(true)
           void mutateCache(detailPath, undefined, { revalidate: false })
         }
       },
       onSuccess: () => {
-        setUnavailable(false)
+        setNotFound(false)
       },
     },
   )
@@ -189,7 +189,7 @@ export function ScrapeJobDetailView({
     void mutate()
   }
 
-  if (unavailable || error?.status === 404) {
+  if (notFound || error?.status === 404) {
     return <NotFoundState runId={runId} />
   }
 
@@ -204,8 +204,12 @@ export function ScrapeJobDetailView({
   return (
     <div className="space-y-6">
       <ScrapeJobDetailHeader job={data} />
-      {error && <RefreshWarning onRetry={retry} />}
-      <ScrapeJobLifecycleState status={data.status} />
+      {error && isRecoverableDetailError(error) && (
+        <RefreshWarning onRetry={retry} />
+      )}
+      {data.status !== "complete" && data.status !== "failed" && (
+        <ScrapeJobLifecycleState status={data.status} />
+      )}
     </div>
   )
 }

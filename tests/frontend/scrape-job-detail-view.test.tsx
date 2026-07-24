@@ -5,16 +5,28 @@ import { describe, expect, it, vi } from "vitest"
 
 import ScrapeJobDetailLoading from "@/app/app/scrape-runs/[runId]/scrape-jobs/[jobId]/loading"
 import { ScrapeJobDetailView } from "@/components/scrape-runs/scrape-job-detail-view"
-import type { ScrapeJobDetail } from "@/lib/scrape-runs/api-contracts"
+import {
+  SCRAPE_RUNS_API_PATH,
+  type ScrapeJobDetail,
+} from "@/lib/scrape-runs/api-contracts"
 import { renderWithSwr } from "@/tests/frontend/render"
-import { validScrapeJobDetail } from "@/tests/frontend/scrape-run-fixtures"
+import {
+  validScrapeJobDetail,
+  validScrapeRunSummary,
+} from "@/tests/frontend/scrape-run-fixtures"
 import { server } from "@/tests/mocks/server"
+
+const toastErrorMock = vi.hoisted(() => vi.fn())
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
     refresh: vi.fn(),
     replace: vi.fn(),
   }),
+}))
+
+vi.mock("sonner", () => ({
+  toast: { error: toastErrorMock },
 }))
 
 const apiUrl = "http://localhost/api/scrape-runs/17/scrape-jobs/31"
@@ -410,6 +422,7 @@ describe("Scrape Job detail polling", () => {
       await vi.advanceTimersByTimeAsync(3_000)
     })
     await vi.waitFor(() => expect(requestCount).toBe(2))
+    expect(toastErrorMock).not.toHaveBeenCalled()
     await act(async () => {
       await vi.advanceTimersByTimeAsync(3_001)
     })
@@ -451,6 +464,12 @@ describe("Scrape Job detail polling", () => {
     vi.useFakeTimers()
     let jobRequests = 0
     let parentRequests = 0
+    const parentListCacheEntry = { data: [validScrapeRunSummary] }
+    const parentDetailCacheEntry = { data: { id: 17, sentinel: "parent detail" } }
+    const cache = new Map<string, object>([
+      [SCRAPE_RUNS_API_PATH, parentListCacheEntry],
+      ["/api/scrape-runs/17", parentDetailCacheEntry],
+    ])
     server.use(
       http.get(apiUrl, () => {
         jobRequests += 1
@@ -467,7 +486,10 @@ describe("Scrape Job detail polling", () => {
       }),
     )
 
-    renderDetail({ focusThrottleInterval: 1 })
+    renderDetail({
+      focusThrottleInterval: 1,
+      provider: () => cache,
+    })
 
     await vi.waitFor(() => expect(jobRequests).toBe(1))
     const focusEvent = new Event("focus")
@@ -478,5 +500,7 @@ describe("Scrape Job detail polling", () => {
     })
     await vi.waitFor(() => expect(jobRequests).toBe(2))
     expect(parentRequests).toBe(0)
+    expect(cache.get(SCRAPE_RUNS_API_PATH)).toBe(parentListCacheEntry)
+    expect(cache.get("/api/scrape-runs/17")).toBe(parentDetailCacheEntry)
   })
 })
