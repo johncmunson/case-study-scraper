@@ -50,7 +50,7 @@ export function ScrapeRunListItem({ run }: { run: ScrapeRunSummary }) {
       <Item
         render={<Link href={`/app/scrape-runs/${run.id}`} />}
         variant="outline"
-        className="min-w-0 items-start gap-4 overflow-hidden p-4 sm:flex-nowrap"
+        className="min-w-0 items-start gap-4 overflow-hidden bg-card p-4 sm:flex-nowrap"
       >
         <ItemContent className="min-w-0 gap-3">
           <div className="flex min-w-0 items-start justify-between gap-3">
