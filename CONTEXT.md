@@ -1,8 +1,12 @@
-# Case Study Scraping
+# Case Study Scraper
 
-This context describes how users discover, extract, and retain structured information from similar pages on a website.
+This context describes how users discover, extract, and retain structured information from pages that share a common structure. Its primary use case is case studies, customer stories, and recent-project pages, while Matching Pages may represent any repeated page type.
 
 ## Language
+
+**Researcher**:
+A user who builds market, competitor, or prospect datasets from case studies and other repeated page types. Researchers include dedicated research roles and agency growth teams.
+_Avoid_: Scraper, operator
 
 **Scrape Run**:
 A user-initiated attempt to identify matching pages on one target site and extract the same structured fields from each page.
