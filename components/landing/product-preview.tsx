@@ -100,8 +100,8 @@ export function ProductPreview() {
           <ArrowRight className="hidden size-5 lg:block" />
         </div>
 
-        <Card className="border border-blue-200/80 bg-card shadow-sm ring-0">
-          <CardHeader className="border-b bg-blue-50/50">
+        <Card className="gap-0 border border-blue-200/80 bg-card py-0 shadow-sm ring-0">
+          <CardHeader className="border-b bg-blue-50/50 p-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="font-mono text-[0.68rem] font-semibold tracking-[0.16em] text-blue-700 uppercase">
@@ -123,7 +123,7 @@ export function ProductPreview() {
               </div>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4">
             <ol className="space-y-3" aria-label="Example structured records">
               {landingExtractionResults.map((result, index) => (
                 <li
