@@ -403,14 +403,14 @@ The route provides a robust lifecycle shell and all data behaviors needed for te
 
 #### Scope
 
-Add complete-result and failed-outcome presentation, then verify the entire feature across responsive, accessibility, cache, privacy, and navigation edge cases.
+Add complete-result and failed-outcome presentation, then harden those outcomes for responsive layouts, accessibility, long content, and lifecycle updates. Entire-feature verification follows in Phase 4.
 
 #### Objectives
 
 - Present successful values in configured order and precise domain language.
 - Explain failures using only sanitized retained diagnostics.
 - Keep long content and every input method usable.
-- Confirm all exclusions and complete repository-wide verification.
+- Integrate terminal outcomes into the lifecycle shell without exposing stale identity or invalid partial output.
 
 #### Deliverables
 
@@ -422,19 +422,59 @@ Add complete-result and failed-outcome presentation, then verify the entire feat
 
 #### Success criteria
 
-- Every Job status has a complete, accurate presentation.
-- Field Keys, raw JSON, partial results, and unsafe internals never appear.
-- No retry/cancel mutation, sibling navigation, export, copy control, `useEffect`, or server-only client import is introduced.
-- Polling transitions cannot render stale identity or invalid partial output.
-- Existing parent-page Job links reach this route and retain `prefetch={false}`.
+- Complete and failed Jobs have complete, accurate presentations within the lifecycle shell.
+- Field Keys, raw JSON, partial results, and unsafe internals never appear in terminal outcomes.
+- Long labels, descriptions, and values remain readable and usable across supported layouts and input methods.
+- Terminal outcome rendering cannot show stale identity or invalid partial output during a lifecycle update.
 
 #### Testing requirements
 
 - Ordered result, Primary Identifier heading, optional null, long/multiline value, description, and marker tests.
 - Generic failure, absent-diagnostic fallback, and labeled missing-required-field tests.
+- Focused accessible-semantic and responsive-behavior tests for results and failure alerts.
+- Focused lifecycle-shell integration tests for complete and failed outcome rendering.
+
+#### Exit condition
+
+Complete and failed outcomes are implemented, hardened, and covered by focused tests, leaving the full feature ready for Phase 4 verification.
+
+### Phase 4 — Entire-feature verification
+
+#### Scope
+
+Verify the completed feature across every status and across responsive, accessibility, cache, retry, privacy, navigation, and repository-integration edge cases. This phase adds no feature scope; it only adds verification and fixes defects found while checking the requirements already defined by this document.
+
+#### Objectives
+
+- Verify every lifecycle state and transition as one integrated feature.
+- Confirm cache, retry, polling, request-isolation, ownership, and privacy behavior under edge conditions.
+- Validate navigation, responsive behavior, and keyboard and assistive-technology semantics.
+- Confirm all exclusions and complete repository-wide verification.
+
+#### Deliverables
+
+- Integrated coverage for lifecycle transitions and cross-component edge cases.
+- Completed responsive, keyboard, accessibility, navigation, cache, and privacy verification.
+- Defect fixes required to satisfy the existing scope, without adding new capabilities.
+- Passing repository-wide test, typecheck, and lint results.
+
+#### Success criteria
+
+- Every Job status has a complete, accurate presentation.
+- Field Keys, raw JSON, partial results, and unsafe internals never appear.
+- No retry/cancel mutation, sibling navigation, export, copy control, `useEffect`, or server-only client import is introduced.
+- Polling transitions cannot render stale identity or invalid partial output.
+- Existing parent-page Job links reach this route and retain `prefetch={false}`.
+- Ownership, nested membership, response privacy, and request-isolation guarantees hold throughout the integrated feature.
+
+#### Testing requirements
+
 - Integrated transitions from active to complete, failed, and cancelled.
 - Cached-data, retry-race, timer-cleanup, isolated-cache, and no-extra-request tests.
+- End-to-end checks of loading, not-found, initial-error, stale-data warning, manual Retry, and terminal states.
 - Keyboard and accessible-semantic tests for results, alerts, links, statuses, and timestamps.
+- Navigation checks for direct entry, breadcrumbs, parent links, source links, and disabled prefetch on parent-page Job links.
+- Privacy and access checks for unauthenticated, non-owned, wrong-parent, malformed-ID, and malformed-success-response cases.
 - Manual checks at narrow, medium, and wide layouts with long content and keyboard navigation.
 - Run `pnpm test`, `pnpm typecheck`, and `pnpm lint`.
 
