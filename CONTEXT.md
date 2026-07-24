@@ -88,6 +88,10 @@ _Avoid_: `NOT_FOUND`, absent property, empty string
 The normalized user-defined values produced by a successful scrape job. Firecrawl response metadata and page content are not part of the result.
 _Avoid_: Metadata, raw response, page content
 
+**Markdown Candidate**:
+A non-null value within one Extraction Result that is eligible to be viewed as rendered Markdown based on that value’s content shape or its Extraction Field’s Field Key. Classification applies only to that individual value, and raw text is its default presentation.
+_Avoid_: Markdown field, run-wide Markdown field
+
 **Extraction Dataset**:
 The collection of successful Extraction Results from one Scrape Run, with each result associated with its Canonical Page URL. Run configuration, lifecycle state, and failure diagnostics are not part of the dataset.
 _Avoid_: Full scrape run, operational archive
