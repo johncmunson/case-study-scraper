@@ -4,6 +4,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  builtin-modules@5.0.0: 7a5ea8af42ea5116ee8a5894c520ade26820b56a9c1550742e33cb9cc13719cb
+
 importers:
 
   .:
@@ -8673,7 +8676,7 @@ snapshots:
       '@workflow/errors': 4.1.5
       '@workflow/swc-plugin': 4.1.2(@swc/core@1.15.3)
       '@workflow/utils': 4.1.4
-      builtin-modules: 5.0.0
+      builtin-modules: 5.0.0(patch_hash=7a5ea8af42ea5116ee8a5894c520ade26820b56a9c1550742e33cb9cc13719cb)
       chalk: 5.6.2
       enhanced-resolve: 5.19.0
       esbuild: 0.28.1
@@ -8702,7 +8705,7 @@ snapshots:
       '@workflow/world-local': 4.2.2
       '@workflow/world-vercel': 4.5.1
       boxen: 8.0.1
-      builtin-modules: 5.0.0
+      builtin-modules: 5.0.0(patch_hash=7a5ea8af42ea5116ee8a5894c520ade26820b56a9c1550742e33cb9cc13719cb)
       chalk: 5.6.2
       chokidar: 4.0.3
       date-fns: 4.1.0
@@ -9332,7 +9335,7 @@ snapshots:
       base64-js: 1.5.1
       ieee754: 1.2.1
 
-  builtin-modules@5.0.0: {}
+  builtin-modules@5.0.0(patch_hash=7a5ea8af42ea5116ee8a5894c520ade26820b56a9c1550742e33cb9cc13719cb): {}
 
   bundle-name@4.1.0:
     dependencies:
