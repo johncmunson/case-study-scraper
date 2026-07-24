@@ -415,7 +415,6 @@ Construct this shape:
 ```json
 {
   "type": "object",
-  "additionalProperties": false,
   "properties": {
     "client": {
       "type": ["string", "null"],
@@ -429,7 +428,6 @@ Rules:
 
 - Every field type is `["string", "null"]`.
 - Omit the JSON Schema `required` keyword entirely.
-- Include `additionalProperties: false`.
 - Retain Firecrawl's default cache behavior; do not set `maxAge: 0`.
 - User/application requiredness never changes the Firecrawl schema.
 
@@ -828,7 +826,7 @@ Each phase is intended to fit within one focused coding session. Do not begin a 
 
 **Testing requirements:**
 
-- Exact schema snapshot/assertion: no `required`, all `["string", "null"]`, appended description, and `additionalProperties: false`.
+- Exact schema snapshot/assertion: no `required`, all `["string", "null"]`, and appended description.
 - Tests for omitted, null, empty, whitespace, unknown, and wrong-typed properties.
 - Tests proving optional null succeeds and required null fails without retaining partial values.
 - Mocked provider error classification tests.

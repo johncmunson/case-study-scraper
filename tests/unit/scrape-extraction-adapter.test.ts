@@ -37,12 +37,11 @@ function successfulScrape(json: unknown) {
 }
 
 describe("Firecrawl extraction schema", () => {
-  it("uses nullable strings, appended null instructions, no required keyword, and no additional properties", () => {
+  it("uses nullable strings and appended null instructions without unsupported schema keywords", () => {
     const schema = buildFirecrawlExtractionSchema(fields)
 
     expect(schema).toEqual({
       type: "object",
-      additionalProperties: false,
       properties: {
         client: {
           type: ["string", "null"],
@@ -57,6 +56,7 @@ describe("Firecrawl extraction schema", () => {
       },
     })
     expect(schema).not.toHaveProperty("required")
+    expect(schema).not.toHaveProperty("additionalProperties")
   })
 })
 

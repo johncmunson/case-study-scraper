@@ -81,7 +81,7 @@ Notes for Phase 6/7:
 
 Implemented the single-page Firecrawl Scrape extraction boundary and its application result contract.
 
-- Added the dynamic JSON Schema builder with nullable string properties, the exact null instruction, `additionalProperties: false`, and no JSON Schema `required` keyword. Application-required and Primary Identifier invariants are validated separately.
+- Added the dynamic JSON Schema builder with nullable string properties, the exact null instruction, and no JSON Schema `required` keyword. Application-required and Primary Identifier invariants are validated separately.
 - Added the JSON-mode Scrape adapter with Firecrawl's default cache behavior and SDK retries disabled so Workflow remains the retry authority.
 - Added strict output normalization for omitted/null/blank values, unknown and wrong-typed property rejection, and ordered missing-required Field Key diagnostics. Missing-required failures expose repository-ready failure data without exposing or retaining the partial normalized result.
 - Extended shared provider error classification to Scraping and added mocked adapter coverage for schema/request shape, normalization, malformed output, fatal required-field outcomes, provider failures, and privacy boundaries.

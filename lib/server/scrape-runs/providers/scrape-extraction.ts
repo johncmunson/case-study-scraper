@@ -22,7 +22,6 @@ type FirecrawlExtractionProperty = Readonly<{
 
 export type FirecrawlExtractionSchema = Readonly<{
   type: "object"
-  additionalProperties: false
   properties: Readonly<Record<string, FirecrawlExtractionProperty>>
 }>
 
@@ -74,7 +73,6 @@ export function buildFirecrawlExtractionSchema(
 
   return {
     type: "object",
-    additionalProperties: false,
     properties,
   }
 }
