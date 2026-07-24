@@ -117,7 +117,7 @@ describe("Scrape Job Extraction Result", () => {
     for (const label of ["Line Feed", "Carriage Return", "CRLF"]) {
       expect(
         within(fieldItem(label).item).getByRole("button", {
-          name: "Render Markdown",
+          name: "Show raw text",
         }),
       ).toBeInTheDocument()
     }
@@ -125,7 +125,7 @@ describe("Scrape Job Extraction Result", () => {
     for (const label of ["Exact Boundary", "Long Single Line"]) {
       const { item } = fieldItem(label)
       expect(
-        within(item).queryByRole("button", { name: "Render Markdown" }),
+        within(item).queryByRole("button", { name: "Show raw text" }),
       ).not.toBeInTheDocument()
       expect(item.querySelector("button")).toHaveAttribute("aria-hidden", "true")
     }
@@ -149,13 +149,13 @@ describe("Scrape Job Extraction Result", () => {
 
     expect(
       within(fieldItem("Summary").item).getByRole("button", {
-        name: "Render Markdown",
+        name: "Show raw text",
       }),
     ).toBeInTheDocument()
     const labelMatchItem = fieldItem("Markdown Notes").item
     expect(
       within(labelMatchItem).queryByRole("button", {
-        name: "Render Markdown",
+        name: "Show raw text",
       }),
     ).not.toBeInTheDocument()
     expect(labelMatchItem.querySelector("button")).toHaveAttribute(
@@ -209,12 +209,25 @@ describe("Scrape Job Extraction Result", () => {
     )
     const candidateButton = within(candidateAction as HTMLElement).getByRole(
       "button",
-      { name: "Render Markdown" },
+      { name: "Show raw text" },
     )
     const placeholderButton = placeholderAction?.querySelector("button")
 
+    const candidateBadges = within(fieldItem("Candidate").term).getByText(
+      "Primary Identifier",
+    ).parentElement
+    const candidateDescription = within(fieldItem("Candidate").term).getByText(
+      "Description for Candidate",
+    )
+
     expect(candidateAction).toHaveClass("shrink-0")
     expect(placeholderAction).toHaveClass("shrink-0")
+    expect(candidateAction?.parentElement).toBe(candidateBadges)
+    expect(candidateAction?.previousElementSibling).toHaveTextContent(
+      "Primary Identifier",
+    )
+    expect(candidateBadges).toHaveClass("mt-2", "items-center")
+    expect(candidateDescription).toHaveClass("mt-2")
     expect(candidateButton).not.toBeDisabled()
     expect(candidateButton).not.toHaveAttribute("tabindex", "-1")
     expect(candidateButton.querySelector("svg")).toHaveAttribute(
@@ -225,10 +238,10 @@ describe("Scrape Job Extraction Result", () => {
     expect(placeholderButton).toHaveAttribute("tabindex", "-1")
   })
 
-  it("toggles one Markdown Candidate between exact raw text and rendered CommonMark independently", async () => {
+  it("renders Markdown Candidates by default and toggles exact raw text independently", async () => {
     const user = userEvent.setup()
     const firstValue = "# Customer story\r\n\r\nThis is **important**."
-    const secondValue = "# Second story\n\nStill raw."
+    const secondValue = "# Second story\n\nStill rendered."
 
     render(
       <ScrapeJobResult
@@ -247,55 +260,64 @@ describe("Scrape Job Extraction Result", () => {
 
     const firstDefinition = fieldItem("First").term.nextElementSibling
     const secondDefinition = fieldItem("Second").term.nextElementSibling
-    const firstRenderButton = within(fieldItem("First").item).getByRole(
+    const showFirstRawButton = within(fieldItem("First").item).getByRole(
       "button",
-      { name: "Render Markdown" },
+      { name: "Show raw text" },
     )
-
-    expect(firstDefinition?.textContent).toBe(firstValue)
-    expect(secondDefinition?.textContent).toBe(secondValue)
-    expect(screen.queryByRole("heading", { name: "Customer story" })).not.toBeInTheDocument()
-    expect(firstRenderButton).toHaveClass("bg-background")
-    expect(firstRenderButton.querySelector("svg")).toHaveClass("lucide-eye")
-
-    await user.click(firstRenderButton)
 
     expect(
       within(firstDefinition as HTMLElement).getByRole("heading", {
-        level: 4,
+        level: 3,
         name: "Customer story",
+      }),
+    ).toBeInTheDocument()
+    expect(
+      within(secondDefinition as HTMLElement).getByRole("heading", {
+        level: 3,
+        name: "Second story",
       }),
     ).toBeInTheDocument()
     expect(within(firstDefinition as HTMLElement).getByText("important").tagName).toBe(
       "STRONG",
     )
-    const showRawButton = within(fieldItem("First").item).getByRole("button", {
-      name: "Show raw text",
-    })
-    expect(showRawButton).toHaveClass("bg-secondary")
-    expect(showRawButton.querySelector("svg")).toHaveClass("lucide-code-xml")
-    expect(
-      within(fieldItem("Second").item).getByRole("button", {
-        name: "Render Markdown",
-      }),
-    ).toBeInTheDocument()
-    expect(secondDefinition?.textContent).toBe(secondValue)
+    expect(showFirstRawButton).toHaveClass("bg-secondary")
+    expect(showFirstRawButton.querySelector("svg")).toHaveClass(
+      "lucide-code-xml",
+    )
 
-    await user.click(showRawButton)
+    await user.click(showFirstRawButton)
 
     expect(firstDefinition?.textContent).toBe(firstValue)
     expect(
       within(firstDefinition as HTMLElement).queryByRole("heading"),
     ).not.toBeInTheDocument()
+    const renderFirstButton = within(fieldItem("First").item).getByRole(
+      "button",
+      { name: "Render Markdown" },
+    )
+    expect(renderFirstButton).toHaveClass("bg-background")
+    expect(renderFirstButton.querySelector("svg")).toHaveClass("lucide-eye")
     expect(
-      within(fieldItem("First").item).getByRole("button", {
-        name: "Render Markdown",
+      within(fieldItem("Second").item).getByRole("button", {
+        name: "Show raw text",
+      }),
+    ).toBeInTheDocument()
+    expect(
+      within(secondDefinition as HTMLElement).getByRole("heading", {
+        name: "Second story",
+      }),
+    ).toBeInTheDocument()
+
+    await user.click(renderFirstButton)
+
+    expect(
+      within(firstDefinition as HTMLElement).getByRole("heading", {
+        name: "Customer story",
       }),
     ).toBeInTheDocument()
   })
 
-  it("resolves safe links against the Canonical Page URL with protocol-specific behavior", async () => {
-    const user = userEvent.setup()
+  it("resolves safe links against the Canonical Page URL with protocol-specific behavior", () => {
     const markdown = [
       "[Relative](related?view=full#results)",
       "[Secure](https://docs.example.org/guide)",
@@ -310,10 +332,6 @@ describe("Scrape Job Extraction Result", () => {
           result: { links_markdown: markdown },
         })}
       />,
-    )
-
-    await user.click(
-      screen.getByRole("button", { name: "Render Markdown" }),
     )
 
     expect(screen.getByRole("link", { name: "Relative" })).toHaveAttribute(
@@ -341,8 +359,7 @@ describe("Scrape Job Extraction Result", () => {
     expect(unsafe).not.toHaveAttribute("href")
   })
 
-  it("renders image alt text with only safe source links and keeps embedded HTML inert", async () => {
-    const user = userEvent.setup()
+  it("renders image alt text with only safe source links and keeps embedded HTML inert", () => {
     const markdown = [
       "![Architecture diagram](assets/diagram.png)",
       "",
@@ -358,10 +375,6 @@ describe("Scrape Job Extraction Result", () => {
           result: { media_markdown: markdown },
         })}
       />,
-    )
-
-    await user.click(
-      screen.getByRole("button", { name: "Render Markdown" }),
     )
 
     expect(container.querySelector("img")).not.toBeInTheDocument()
@@ -383,8 +396,7 @@ describe("Scrape Job Extraction Result", () => {
     expect(screen.getByText(/<div data-live="yes">/)).toBeInTheDocument()
   })
 
-  it("renders compact CommonMark prose and code with remapped headings and bounded overflow", async () => {
-    const user = userEvent.setup()
+  it("renders compact CommonMark prose and code with remapped headings and bounded overflow", () => {
     const markdown = [
       "## Secondary heading",
       "",
@@ -424,19 +436,20 @@ describe("Scrape Job Extraction Result", () => {
       />,
     )
 
-    await user.click(
-      screen.getByRole("button", { name: "Render Markdown" }),
-    )
-
     const definition = fieldItem("Summary").term.nextElementSibling as HTMLElement
     expect(
       within(definition).getByRole("heading", {
-        level: 5,
+        level: 4,
         name: "Secondary heading",
       }),
     ).toHaveClass("wrap-anywhere")
+    expect(
+      within(definition).getByRole("heading", {
+        level: 5,
+        name: "Tertiary heading",
+      }),
+    ).toBeInTheDocument()
     for (const name of [
-      "Tertiary heading",
       "Quaternary heading",
       "Quinary heading",
       "Senary heading",
@@ -465,7 +478,8 @@ describe("Scrape Job Extraction Result", () => {
     )
   })
 
-  it("keeps long labels, descriptions, and candidate raw text readable and exact", () => {
+  it("keeps long labels, descriptions, and candidate raw text readable and exact", async () => {
+    const user = userEvent.setup()
     const longLabel = "Industry Classification With A Very Long User Facing Name"
     const longDescription =
       "An intentionally long field description that remains readable on narrow layouts"
@@ -488,6 +502,13 @@ describe("Scrape Job Extraction Result", () => {
 
     expect(screen.getByText(longLabel)).toHaveClass("wrap-break-word")
     expect(screen.getByText(longDescription)).toHaveClass("wrap-break-word")
+
+    await user.click(
+      within(fieldItem(longLabel).item).getByRole("button", {
+        name: "Show raw text",
+      }),
+    )
+
     const value = screen.getByText(/First line with an intentionally long/)
     expect(value).toHaveTextContent(/First line.*not-a-link/)
     expect(value.textContent).toBe(multilineValue)

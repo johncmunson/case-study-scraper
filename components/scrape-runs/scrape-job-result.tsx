@@ -132,53 +132,48 @@ function ExtractionResultField({
   field: ExtractionField
   value: string | null
 }) {
-  const [renderMarkdown, setRenderMarkdown] = useState(false)
   const candidate = isMarkdownCandidate(field.key, value)
+  const [renderMarkdown, setRenderMarkdown] = useState(true)
+  const shouldRenderMarkdown = candidate && renderMarkdown
 
   return (
     <div className="grid min-w-0 gap-3 rounded-lg border p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] sm:gap-5">
       <dt className="min-w-0">
-        <span className="flex min-w-0 items-start justify-between gap-2">
-          <span className="min-w-0">
-            <span className="block wrap-break-word font-medium">
-              {field.label}
-            </span>
-            <span className="mt-1 flex flex-wrap gap-2">
-              <Badge variant={field.required ? "secondary" : "outline"}>
-                {field.required ? "Required" : "Optional"}
-              </Badge>
-              {field.primaryIdentifier && (
-                <Badge variant="outline">Primary Identifier</Badge>
-              )}
-            </span>
-          </span>
+        <span className="block wrap-break-word font-medium">{field.label}</span>
+        <span className="mt-2 flex flex-wrap items-center gap-2">
+          <Badge variant={field.required ? "secondary" : "outline"}>
+            {field.required ? "Required" : "Optional"}
+          </Badge>
+          {field.primaryIdentifier && (
+            <Badge variant="outline">Primary Identifier</Badge>
+          )}
           <span
-            className="flex size-7 shrink-0 items-start justify-end"
+            className="flex size-7 shrink-0 items-center"
             data-slot="markdown-action"
           >
             <MarkdownAction
               candidate={candidate}
-              renderMarkdown={renderMarkdown}
+              renderMarkdown={shouldRenderMarkdown}
               onToggle={() =>
                 setRenderMarkdown((renderMarkdown) => !renderMarkdown)
               }
             />
           </span>
         </span>
-        <span className="mt-1 block wrap-break-word text-sm text-muted-foreground">
+        <span className="mt-2 block wrap-break-word text-sm text-muted-foreground">
           {field.description}
         </span>
       </dt>
       <dd
         className={
-          renderMarkdown
+          shouldRenderMarkdown
             ? "min-w-0 select-text sm:pt-0.5"
             : "min-w-0 wrap-anywhere whitespace-pre-wrap select-text sm:pt-0.5"
         }
       >
         {value === null ? (
           <span className="text-muted-foreground">Not found</span>
-        ) : renderMarkdown ? (
+        ) : shouldRenderMarkdown ? (
           <ReactMarkdown
             urlTransform={(url) => resolveMarkdownUrl(url, canonicalPageUrl)}
             components={{
@@ -204,18 +199,23 @@ function ExtractionResultField({
                 )
               },
               h1: ({ node: _node, ...props }) => (
+                <h3
+                  className="mt-3 wrap-anywhere text-lg font-semibold first:mt-0"
+                  {...props}
+                />
+              ),
+              h2: ({ node: _node, ...props }) => (
                 <h4
                   className="mt-3 wrap-anywhere text-base font-semibold first:mt-0"
                   {...props}
                 />
               ),
-              h2: ({ node: _node, ...props }) => (
+              h3: ({ node: _node, ...props }) => (
                 <h5
-                  className="mt-3 wrap-anywhere text-sm font-semibold first:mt-0"
+                  className="mt-2 wrap-anywhere text-sm font-semibold first:mt-0"
                   {...props}
                 />
               ),
-              h3: CompactMarkdownHeading,
               h4: CompactMarkdownHeading,
               h5: CompactMarkdownHeading,
               h6: CompactMarkdownHeading,
