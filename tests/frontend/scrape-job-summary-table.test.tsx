@@ -119,6 +119,48 @@ describe("Scrape Job summary table", () => {
     expect(container.querySelector('[data-column="finished"]')).toHaveClass("hidden")
   })
 
+  it("keeps long labels, identifiers, URLs, and diagnostics accessible on narrow layouts", async () => {
+    const longLabel = "Customer organization and international division ".repeat(4).trim()
+    const longIdentifier = "AcmeInternationalCustomerIdentifier".repeat(8)
+    const longUrl = `https://www.example.com/customers/${"long-path-segment".repeat(12)}`
+    const jobs = [
+      job(41, { primaryIdentifier: longIdentifier, url: longUrl }),
+      job(42, {
+        status: "failed",
+        primaryIdentifier: null,
+        failureCode: "missing_required_fields",
+      }),
+    ]
+
+    render(
+      <div style={{ width: 280 }}>
+        <ScrapeJobSummaryTable
+          run={run(jobs, {
+            fields: validScrapeRunDetail.fields.map((field) =>
+              field.primaryIdentifier ? { ...field, label: longLabel } : field,
+            ),
+          })}
+        />
+      </div>,
+    )
+
+    expect(
+      screen.getByRole("columnheader", { name: longLabel }),
+    ).toHaveClass("wrap-anywhere")
+    const identifierLink = screen.getByRole("link", { name: longIdentifier })
+    identifierLink.focus()
+    expect(identifierLink).toHaveFocus()
+    expect(identifierLink).toHaveClass("truncate", "focus-visible:ring-2")
+
+    const urlLink = screen.getAllByRole("link", { name: longUrl })[0]
+    urlLink.focus()
+    expect(urlLink).toHaveFocus()
+    expect(await screen.findByRole("tooltip")).toHaveTextContent(longUrl)
+    const failureCode = screen.getByText("missing_required_fields")
+    expect(failureCode.closest("p")).toHaveClass("wrap-anywhere")
+    expect(failureCode.closest("td")).toHaveClass("whitespace-normal")
+  })
+
   it("shows exact status counts and filters without changing API order", async () => {
     const jobs = [
       job(1, { status: "pending", primaryIdentifier: null, finishedAt: null }),
@@ -161,6 +203,11 @@ describe("Scrape Job summary table", () => {
     expect(screen.getByText("26–31 of 31 jobs")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Next page" })).toBeDisabled()
 
+    const previousPage = screen.getByRole("button", { name: "Previous page" })
+    previousPage.focus()
+    await userEvent.keyboard("{Enter}")
+    expect(screen.getByText("1–25 of 31 jobs")).toBeInTheDocument()
+
     await selectStatus(/^Complete \(31\)$/)
     expect(screen.getByRole("link", { name: "Customer 1" })).toBeInTheDocument()
     expect(screen.getByText("1–25 of 31 jobs")).toBeInTheDocument()
@@ -172,6 +219,24 @@ describe("Scrape Job summary table", () => {
     expect(screen.getByRole("link", { name: "Customer 5" })).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Next page" })).not.toBeInTheDocument()
     expect(screen.getByText("1–5 of 5 jobs")).toBeInTheDocument()
+  })
+
+  it("operates status filtering and the Show all action from the keyboard", async () => {
+    render(<ScrapeJobSummaryTable run={run([job(1), job(2)])} />)
+
+    const statusFilter = screen.getByRole("combobox", {
+      name: "Filter by status",
+    })
+    statusFilter.focus()
+    await userEvent.keyboard("{Enter}f{Enter}")
+
+    expect(screen.getByText("No jobs have the Failed status.")).toBeInTheDocument()
+    const showAll = screen.getByRole("button", { name: "Show all jobs" })
+    showAll.focus()
+    await userEvent.keyboard("{Enter}")
+
+    expect(screen.getByRole("link", { name: "Customer 1" })).toBeInTheDocument()
+    expect(statusFilter).toHaveTextContent("All (2)")
   })
 
   it("offers Show all jobs when the selected status has no matches", async () => {

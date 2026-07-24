@@ -35,9 +35,11 @@ export function ScrapeRunOverview({ run }: { run: ScrapeRunDetail }) {
             <h3>Scrape Run failure</h3>
           </AlertTitle>
           <AlertDescription className="space-y-1">
-            {run.failureMessage && <p>{run.failureMessage}</p>}
+            {run.failureMessage && (
+              <p className="wrap-anywhere">{run.failureMessage}</p>
+            )}
             {run.failureCode && (
-              <p className="font-mono text-xs">
+              <p className="wrap-anywhere font-mono text-xs">
                 Failure code: <code>{run.failureCode}</code>
               </p>
             )}

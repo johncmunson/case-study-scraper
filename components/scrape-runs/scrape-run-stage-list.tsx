@@ -88,9 +88,11 @@ function ScrapeRunStageItem({ stage }: { stage: ScrapeRunStageState }) {
         {stage.status === "failed" &&
           (stage.failureMessage || stage.failureCode) && (
             <div className="space-y-1 text-sm text-destructive">
-              {stage.failureMessage && <p>{stage.failureMessage}</p>}
+              {stage.failureMessage && (
+                <p className="wrap-anywhere">{stage.failureMessage}</p>
+              )}
               {stage.failureCode && (
-                <p className="font-mono text-xs">
+                <p className="wrap-anywhere font-mono text-xs">
                   Failure code: <code>{stage.failureCode}</code>
                 </p>
               )}

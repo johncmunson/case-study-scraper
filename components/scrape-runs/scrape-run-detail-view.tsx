@@ -2,7 +2,7 @@
 
 import { CircleAlertIcon } from "lucide-react"
 import Link from "next/link"
-import { useState } from "react"
+import { useRef, useState } from "react"
 import useSWR, { useSWRConfig } from "swr"
 import useSWRMutation from "swr/mutation"
 
@@ -120,6 +120,7 @@ function InitialErrorState({ onRetry }: { onRetry: () => void }) {
 type CancellationNotice = Readonly<{
   title: string
   description: string
+  visibility: "always" | "while-active"
 }>
 
 function CancellationWarning({
@@ -157,6 +158,7 @@ export function ScrapeRunDetailView({ runId }: { runId: string }) {
   const [listRefreshFailed, setListRefreshFailed] = useState(false)
   const [notFoundAfterCancellation, setNotFoundAfterCancellation] =
     useState(false)
+  const readModelRefreshGeneration = useRef(0)
   const detailPath = getScrapeRunDetailApiPath(runId)
   const { data, error, mutate } = useSWR<
     ScrapeRunDetail,
@@ -170,6 +172,9 @@ export function ScrapeRunDetailView({ runId }: { runId: string }) {
     revalidateOnFocus: true,
     revalidateOnReconnect: true,
     shouldRetryOnError: shouldRetryDetailRequest,
+    onSuccess: () => {
+      setDetailRefreshFailed(false)
+    },
   })
   const cancellationPath = getScrapeRunCancellationApiPath(runId)
   const { trigger: cancelRun, isMutating: isCancelling } = useSWRMutation<
@@ -181,6 +186,7 @@ export function ScrapeRunDetailView({ runId }: { runId: string }) {
   }
 
   async function revalidateReadModels() {
+    const refreshGeneration = ++readModelRefreshGeneration.current
     const [detailResult, listResult] = await Promise.allSettled([
       mutateCache<ScrapeRunDetail>(
         detailPath,
@@ -193,8 +199,10 @@ export function ScrapeRunDetailView({ runId }: { runId: string }) {
         { revalidate: false },
       ),
     ])
-    setDetailRefreshFailed(detailResult.status === "rejected")
-    setListRefreshFailed(listResult.status === "rejected")
+    if (refreshGeneration === readModelRefreshGeneration.current) {
+      setDetailRefreshFailed(detailResult.status === "rejected")
+      setListRefreshFailed(listResult.status === "rejected")
+    }
 
     return { detailResult, listResult }
   }
@@ -268,6 +276,7 @@ export function ScrapeRunDetailView({ runId }: { runId: string }) {
               title: "Scrape Run finished before cancellation",
               description:
                 "The Scrape Run completed or failed before cancellation took effect. Showing its latest state.",
+              visibility: "always",
             })
             await revalidateReadModels()
             return
@@ -278,6 +287,7 @@ export function ScrapeRunDetailView({ runId }: { runId: string }) {
               title: "Cancellation hasn’t finished",
               description:
                 "The cancellation request was recorded, but cleanup did not finish. Retry cancellation after the latest state loads.",
+              visibility: "while-active",
             })
             await revalidateReadModels()
             return
@@ -288,6 +298,7 @@ export function ScrapeRunDetailView({ runId }: { runId: string }) {
               title: "Couldn’t cancel scrape run",
               description:
                 "The Scrape Run could not be found. Checking whether it is still available.",
+              visibility: "always",
             })
             const [detailResult] = await Promise.allSettled([
               mutateCache<ScrapeRunDetail>(
@@ -311,6 +322,7 @@ export function ScrapeRunDetailView({ runId }: { runId: string }) {
             title: "Couldn’t confirm cancellation",
             description:
               "The request may have reached the server. Showing the latest available Scrape Run state.",
+            visibility: "while-active",
           })
           await revalidateReadModels()
         }
@@ -324,9 +336,11 @@ export function ScrapeRunDetailView({ runId }: { runId: string }) {
         run={data}
         cancellationAction={cancellationAction}
       />
-      {cancellationNotice && (
-        <CancellationWarning notice={cancellationNotice} />
-      )}
+      {cancellationNotice &&
+        (cancellationNotice.visibility === "always" ||
+          isActiveScrapeRun(data)) && (
+          <CancellationWarning notice={cancellationNotice} />
+        )}
       {(error || detailRefreshFailed || listRefreshFailed) && (
         <RefreshWarning onRetry={retryReadModels} />
       )}

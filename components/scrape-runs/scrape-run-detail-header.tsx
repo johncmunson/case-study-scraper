@@ -111,13 +111,20 @@ export function ScrapeRunDetailHeader({
         </div>
 
         <div className="flex shrink-0 flex-col items-start gap-3 sm:items-end">
-          <Badge
-            aria-label={`Status: ${statusLabel}`}
-            variant={getStatusBadgeVariant(run)}
+          <div
+            role="status"
+            aria-label={`Scrape Run status: ${statusLabel}`}
+            aria-live="polite"
+            aria-atomic="true"
           >
-            {showSpinner && <Spinner aria-hidden="true" />}
-            {statusLabel}
-          </Badge>
+            <Badge
+              aria-label={`Status: ${statusLabel}`}
+              variant={getStatusBadgeVariant(run)}
+            >
+              {showSpinner && <Spinner aria-hidden="true" />}
+              {statusLabel}
+            </Badge>
+          </div>
           {cancellationAction}
         </div>
       </div>

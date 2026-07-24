@@ -8,7 +8,7 @@ export default async function ScrapeRunDetailPage(
 
   return (
     <AppPage title="Scrape Run">
-      <ScrapeRunDetailView runId={runId} />
+      <ScrapeRunDetailView key={runId} runId={runId} />
     </AppPage>
   )
 }

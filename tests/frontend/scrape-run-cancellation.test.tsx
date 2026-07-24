@@ -101,7 +101,8 @@ describe("Scrape Run cancellation", () => {
     expect(postCount).toBe(0)
     expect(getRunHeader().getByLabelText("Status: Pending")).toBeInTheDocument()
 
-    await userEvent.click(trigger)
+    trigger.focus()
+    await userEvent.keyboard("{Enter}")
 
     const dialog = screen.getByRole("alertdialog", {
       name: "Cancel Scrape Run?",
@@ -119,7 +120,7 @@ describe("Scrape Run cancellation", () => {
     ).toBeInTheDocument()
     expect(postCount).toBe(0)
 
-    await userEvent.click(keepRunning)
+    await userEvent.keyboard("{Enter}")
 
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument()
     expect(trigger).toHaveFocus()
@@ -293,6 +294,7 @@ describe("Scrape Run cancellation", () => {
       )
     })
     expect(screen.getByText("2 succeeded · 1 failed")).toBeInTheDocument()
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument()
     expect(detailGetCount).toBe(2)
     expect(listGetCount).toBe(2)
 
@@ -301,13 +303,81 @@ describe("Scrape Run cancellation", () => {
     expect(
       await screen.findByText("2 succeeded · 1 failed · 2 cancelled"),
     ).toBeInTheDocument()
-    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument()
   })
 
-  it("keeps confirmed Cancelled cache state when both post-202 GETs fail", async () => {
+  it("does not let an older in-flight refresh overwrite confirmed cancellation", async () => {
+    let detailGetCount = 0
+    let releaseOlderRefresh!: () => void
+    const olderRefreshCanFinish = new Promise<void>((resolve) => {
+      releaseOlderRefresh = resolve
+    })
+    const cancelledDetail = detail({
+      status: "cancelled",
+      cancellationRequestedAt: "2026-04-01T10:05:00.000Z",
+      finishedAt: "2026-04-01T10:10:00.000Z",
+    })
+    server.use(
+      http.get(detailApiUrl, async () => {
+        detailGetCount += 1
+        if (detailGetCount === 2) {
+          await olderRefreshCanFinish
+          return HttpResponse.json(detail({ status: "in_progress" }))
+        }
+        return HttpResponse.json(
+          detailGetCount === 1 ? detail() : cancelledDetail,
+        )
+      }),
+      http.get(listApiUrl, () =>
+        HttpResponse.json([
+          summary({
+            status: "cancelled",
+            cancellationRequestedAt: "2026-04-01T10:05:00.000Z",
+            finishedAt: "2026-04-01T10:10:00.000Z",
+          }),
+        ]),
+      ),
+      http.post(`${detailApiUrl}/cancel`, () =>
+        HttpResponse.json(
+          { id: 17, status: "cancelled" },
+          { status: 202 },
+        ),
+      ),
+    )
+
+    renderDetail()
+    await screen.findByRole("heading", { name: "Customer stories" })
+
+    window.dispatchEvent(new Event("online"))
+    await waitFor(() => expect(detailGetCount).toBe(2))
+
+    const user = userEvent.setup()
+    await user.click(screen.getByRole("button", { name: "Cancel Scrape Run" }))
+    await user.click(
+      within(screen.getByRole("alertdialog")).getByRole("button", {
+        name: "Cancel Scrape Run",
+      }),
+    )
+
+    await waitFor(() => {
+      expect(detailGetCount).toBe(3)
+      expect(getRunHeader().getByLabelText("Status: Cancelled")).toBeInTheDocument()
+    })
+
+    releaseOlderRefresh()
+    await new Promise((resolve) => setTimeout(resolve, 25))
+
+    expect(getRunHeader().getByLabelText("Status: Cancelled")).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /cancel/i })).not.toBeInTheDocument()
+    expect(detailGetCount).toBe(3)
+  })
+
+  it("keeps confirmed Cancelled state and ignores an older failed Retry after a newer success", async () => {
     let detailGetCount = 0
     let listGetCount = 0
-    let failRevalidation = true
+    let releaseOlderRetry!: () => void
+    const olderRetryCanFinish = new Promise<void>((resolve) => {
+      releaseOlderRetry = resolve
+    })
     const cancelledDetail = detail({
       status: "cancelled",
       cancellationRequestedAt: "2026-04-01T10:05:00.000Z",
@@ -328,18 +398,20 @@ describe("Scrape Run cancellation", () => {
       jobCounts: cancelledDetail.jobCounts,
     })
     server.use(
-      http.get(detailApiUrl, () => {
+      http.get(detailApiUrl, async () => {
         detailGetCount += 1
-        if (detailGetCount > 1 && failRevalidation) {
+        if (detailGetCount === 3) await olderRetryCanFinish
+        if (detailGetCount === 2 || detailGetCount === 3) {
           return HttpResponse.json({ error: "Unavailable." }, { status: 503 })
         }
         return HttpResponse.json(
           detailGetCount === 1 ? detail() : cancelledDetail,
         )
       }),
-      http.get(listApiUrl, () => {
+      http.get(listApiUrl, async () => {
         listGetCount += 1
-        if (listGetCount > 1 && failRevalidation) {
+        if (listGetCount === 3) await olderRetryCanFinish
+        if (listGetCount === 2 || listGetCount === 3) {
           return HttpResponse.json({ error: "Unavailable." }, { status: 503 })
         }
         return HttpResponse.json([
@@ -378,17 +450,25 @@ describe("Scrape Run cancellation", () => {
     expect(detailGetCount).toBe(2)
     expect(listGetCount).toBe(2)
 
-    failRevalidation = false
+    await user.click(screen.getByRole("button", { name: "Retry" }))
+    await waitFor(() => {
+      expect(detailGetCount).toBe(3)
+      expect(listGetCount).toBe(3)
+    })
     await user.click(screen.getByRole("button", { name: "Retry" }))
 
     await waitFor(() => {
       expect(screen.queryByText("Couldn’t refresh scrape run")).not.toBeInTheDocument()
-      expect(detailGetCount).toBe(3)
-      expect(listGetCount).toBe(3)
+      expect(detailGetCount).toBe(4)
+      expect(listGetCount).toBe(4)
     })
     expect(
       screen.getByText("2 succeeded · 1 failed · 2 cancelled"),
     ).toBeInTheDocument()
+
+    releaseOlderRetry()
+    await new Promise((resolve) => setTimeout(resolve, 25))
+    expect(screen.queryByText("Couldn’t refresh scrape run")).not.toBeInTheDocument()
   })
 
   it("shows the stale-data warning when only detail revalidation fails", async () => {
@@ -399,7 +479,15 @@ describe("Scrape Run cancellation", () => {
         detailGetCount += 1
         return detailGetCount === 1
           ? HttpResponse.json(detail())
-          : HttpResponse.json({ error: "Unavailable." }, { status: 503 })
+          : detailGetCount === 2
+            ? HttpResponse.json({ error: "Unavailable." }, { status: 503 })
+            : HttpResponse.json(
+                detail({
+                  status: "cancelled",
+                  cancellationRequestedAt: "2026-04-01T10:05:00.000Z",
+                  finishedAt: "2026-04-01T10:10:00.000Z",
+                }),
+              )
       }),
       http.get(listApiUrl, () => {
         listGetCount += 1
@@ -444,6 +532,13 @@ describe("Scrape Run cancellation", () => {
     expect(screen.getByText("2 succeeded · 1 failed")).toBeInTheDocument()
     expect(detailGetCount).toBe(2)
     expect(listGetCount).toBe(2)
+
+    window.dispatchEvent(new Event("online"))
+
+    await waitFor(() => {
+      expect(detailGetCount).toBe(3)
+      expect(screen.queryByText("Couldn’t refresh scrape run")).not.toBeInTheDocument()
+    })
   })
 
   it("shows the stale-data warning when only Run-list revalidation fails", async () => {
@@ -511,17 +606,35 @@ describe("Scrape Run cancellation", () => {
       status: "in_progress",
       cancellationRequestedAt: "2026-04-01T10:05:00.000Z",
     })
+    const completedDetail = detail({
+      status: "complete",
+      cancellationRequestedAt: "2026-04-01T10:05:00.000Z",
+      finishedAt: "2026-04-01T10:10:00.000Z",
+    })
+    const completedSummary = summary({
+      status: "complete",
+      cancellationRequestedAt: "2026-04-01T10:05:00.000Z",
+      finishedAt: "2026-04-01T10:10:00.000Z",
+    })
     server.use(
       http.get(detailApiUrl, () => {
         detailGetCount += 1
         return HttpResponse.json(
-          detailGetCount === 1 ? detail() : cancellingDetail,
+          detailGetCount === 1
+            ? detail()
+            : detailGetCount === 2
+              ? cancellingDetail
+              : completedDetail,
         )
       }),
       http.get(listApiUrl, () => {
         listGetCount += 1
         return HttpResponse.json([
-          listGetCount === 1 ? summary() : cancellingSummary,
+          listGetCount === 1
+            ? summary()
+            : listGetCount === 2
+              ? cancellingSummary
+              : completedSummary,
         ])
       }),
       http.post(`${detailApiUrl}/cancel`, () => {
@@ -560,6 +673,13 @@ describe("Scrape Run cancellation", () => {
     expect(detailGetCount).toBe(2)
     expect(listGetCount).toBe(2)
     expect(postCount).toBe(1)
+
+    window.dispatchEvent(new Event("online"))
+
+    await waitFor(() => {
+      expect(getRunHeader().getByLabelText("Status: Complete")).toBeInTheDocument()
+      expect(screen.queryByText("Cancellation hasn’t finished")).not.toBeInTheDocument()
+    })
   })
 
   it("reconciles a 409 completion race from detail and list GET state", async () => {

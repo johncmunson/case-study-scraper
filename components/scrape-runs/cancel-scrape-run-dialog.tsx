@@ -39,7 +39,7 @@ export function CancelScrapeRunDialog({
   return (
     <div className="space-y-2 sm:text-right">
       {isRetry && (
-        <p className="max-w-sm text-sm text-muted-foreground">
+        <p className="max-w-sm wrap-anywhere text-sm text-muted-foreground">
           The earlier cancellation request has not finished cleanup.
         </p>
       )}

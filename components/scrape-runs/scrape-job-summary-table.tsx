@@ -128,7 +128,7 @@ function JobStatus({ job }: { job: ScrapeJobSummary }) {
         {statusLabel}
       </Badge>
       {job.status === "failed" && job.failureCode && (
-        <p className="max-w-40 whitespace-normal font-mono text-xs text-destructive">
+        <p className="max-w-40 wrap-anywhere font-mono text-xs text-destructive">
           <code>{job.failureCode}</code>
         </p>
       )}
@@ -195,7 +195,7 @@ function ScrapeJobRow({
           runId={runId}
         />
       </TableCell>
-      <TableCell>
+      <TableCell className="whitespace-normal">
         <JobStatus job={job} />
       </TableCell>
       <TableCell data-column="attempts" className="hidden lg:table-cell">
@@ -259,6 +259,7 @@ export function ScrapeJobSummaryTable({ run }: { run: ScrapeRunDetail }) {
   const primaryIdentifier = getPrimaryIdentifierField(run.fields)
   const primaryIdentifierLabel = primaryIdentifier?.label ?? "Primary Identifier"
   const statusCounts = getScrapeJobStatusCounts(run.jobs)
+  // Pagination bounds rendering only; the accepted read contract still validates every job.
   const filteredJobs = filterScrapeJobsByStatus(run.jobs, statusFilter)
   const page = clampScrapeJobPage(requestedPage, filteredJobs.length)
   const visibleJobs = paginateScrapeJobs(filteredJobs, page)
@@ -337,7 +338,7 @@ export function ScrapeJobSummaryTable({ run }: { run: ScrapeRunDetail }) {
                   <Table aria-label="Scrape Jobs" className="table-fixed">
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[48%] md:w-[28%]">
+                        <TableHead className="w-[48%] wrap-anywhere whitespace-normal md:w-[28%]">
                           {primaryIdentifierLabel}
                         </TableHead>
                         <TableHead className="hidden w-[36%] md:table-cell">

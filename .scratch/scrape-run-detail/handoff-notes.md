@@ -52,3 +52,16 @@ Phase 4 was completed as planned.
 No backend or contract changes were needed in this phase; the cancellation endpoint and validated fetcher from earlier phases already matched the required mutation contract. One implementation wrinkle was that detail-only and list-only post-mutation refresh failures must be tracked independently when explicit SWR cache mutations retain stale data; focused regression tests now cover both cases.
 
 Verification completed with `pnpm typecheck`, `pnpm lint`, and `pnpm test` (397 tests passing). Phase 5 can focus on integrated responsive/accessibility hardening and cross-feature race coverage.
+
+## Phase 5 — Integrated quality hardening
+
+Phase 5 was completed with focused hardening rather than new product behavior.
+
+- Added a restrained live Run-status region, route-keyed client-state reset, stale reconciliation generation guards, successful-refresh warning recovery, and lifecycle-aware cancellation notices.
+- Strengthened narrow-layout wrapping for failure details, dynamic field labels, and status cells. Agent-browser smoke testing with long data found one real mobile table overflow caused by inherited `white-space: nowrap`; the status cell now wraps and the table has no horizontal overflow.
+- Added integrated coverage for polling while filtered and paginated, page clamping, stale polling versus confirmed cancellation, out-of-order Retry responses, scheduled-retry cleanup on unmount, terminal cleanup of cancellation notices, keyboard operation, and long content.
+- Manually checked the production view through a temporary local smoke-test harness at 390px, 768px, and 1440px. Verified heading/landmark names, long-content containment, keyboard filtering and pagination, configuration disclosure, dialog focus trapping/Escape/focus restoration, and external-link labeling. The temporary harness was removed afterward.
+
+The only deviation was practical: authenticated direct-route data was unavailable for deterministic browser fixtures, so the manual pass used the real production components with a browser-mocked Run-detail response. Automated route, navigation-target, loading, and not-found tests remain the source of truth for those states.
+
+Final verification completed with `pnpm typecheck`, `pnpm lint`, and `pnpm test` (404 tests passing).

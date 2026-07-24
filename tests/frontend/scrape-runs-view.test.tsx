@@ -225,9 +225,13 @@ describe("Scrape Run list states", () => {
       "href",
       "/app/scrape-runs/29",
     )
-    expect(getRunItem("Customer stories")).toContainElement(
-      screen.getByRole("link", { name: /Customer stories/ }),
-    )
+    const customerStoriesLink = screen.getByRole("link", {
+      name: /Customer stories/,
+    })
+    expect(getRunItem("Customer stories")).toContainElement(customerStoriesLink)
+    customerStoriesLink.focus()
+    expect(customerStoriesLink).toHaveFocus()
+    expect(customerStoriesLink).toHaveClass("focus-visible:ring-[3px]")
   })
 
   it("keeps long content understandable in a constrained list item", () => {
