@@ -1,11 +1,11 @@
-# Phase 2 handoff notes
+# Phase 3 handoff notes
 
-Phase 2 was implemented as planned.
+Phase 3 was implemented as planned.
 
-- Added `fast-csv` and server-only CSV/JSON serialization in `lib/server/scrape-runs/extraction-dataset-serialization.ts`. CSV uses ordered Field Labels, the system source column, UTF-8 BOM, CRLF delimiters, standards-compliant quoting, blank Missing Values, and unchanged formula-like values; JSON is two-space pretty-printed with no BOM.
-- Added the authenticated owner-scoped attachment route at `app/api/scrape-runs/[runId]/extraction-dataset/route.ts`, including explicit format validation, Phase 1 eligibility/result validation, safe filenames, declared status mappings, private/no-store and nosniff headers, and safe structured failure diagnostics that never include extracted values or raw errors.
-- Added serializer and route unit coverage plus an integration route test proving that the real repository-to-response path includes only complete Jobs in both formats.
+- Added the Extraction Dataset download control to the Scrape Jobs card action. Active Runs and terminal Runs without successful results keep a keyboard-discoverable disabled control with the specified tooltip; eligible complete, failed, and cancelled Runs expose CSV and JSON choices with Run-wide result-count copy.
+- Added isolated client-side download behavior using the Phase 1 shared path and filename helpers. One in-flight guard covers both formats, the menu closes into **Preparing download…**, successful responses are downloaded as Blobs with object-URL cleanup, and failures restore the control and show one safe warning without retries, SWR caching, or read-model revalidation.
+- Added frontend coverage for placement, availability, keyboard interaction, menu copy, endpoint selection, loading/duplicate prevention, safe filenames, Blob handoff and cleanup, safe failure handling, and preservation of filtering/pagination and polling behavior.
 
-There were no material deviations from the plan. One testing detail worth noting: the Fetch `Response.text()` decoder strips a leading UTF-8 BOM, so BOM assertions read response bytes through `arrayBuffer()` instead.
+There were no material deviations from the plan. The only implementation detail of note was that the current Base UI-backed `DropdownMenuLabel` must be nested in `DropdownMenuGroup`; this was handled without changing the shared UI primitive.
 
-Final verification passed: 561 tests, typecheck, and lint. Phase 3 can use the existing shared `getExtractionDatasetApiPath()` and `getExtractionDatasetFilename()` helpers and consume this route as a Blob without adding SWR caching or retries.
+Final verification passed: 576 tests, typecheck, and lint. Phase 4 can focus on the planned integrated privacy, accessibility, responsive, and manual file-content checks; no obsolete mocks or duplicated filename/path logic were introduced in this phase.

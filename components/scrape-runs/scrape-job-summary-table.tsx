@@ -4,10 +4,12 @@ import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
 
+import { DownloadExtractionDataset } from "@/components/scrape-runs/download-extraction-dataset"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Card,
+  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
@@ -288,6 +290,14 @@ export function ScrapeJobSummaryTable({ run }: { run: ScrapeRunDetail }) {
           <CardDescription>
             Browse extraction attempts for the matching pages in this Scrape Run.
           </CardDescription>
+          <CardAction>
+            <DownloadExtractionDataset
+              runId={run.id}
+              runName={run.name}
+              runStatus={run.status}
+              successfulResultCount={run.jobCounts.complete}
+            />
+          </CardAction>
         </CardHeader>
         <CardContent className="space-y-4">
           {run.jobs.length === 0 ? (
