@@ -10,13 +10,6 @@ import ReactMarkdown, {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
@@ -28,7 +21,7 @@ type ExtractionField = ScrapeJobDetail["fields"][number]
 function isMarkdownCandidate(fieldKey: string, value: string | null) {
   return (
     value !== null &&
-    ((value.length > 250 && /[\r\n]/.test(value)) ||
+    ((value.length > 350 && /[\r\n]/.test(value)) ||
       fieldKey.includes("markdown"))
   )
 }
@@ -137,9 +130,11 @@ function ExtractionResultField({
   const shouldRenderMarkdown = candidate && renderMarkdown
 
   return (
-    <div className="grid min-w-0 gap-3 rounded-lg border p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] sm:gap-5">
+    <div className="grid min-w-0 gap-3 rounded-lg border p-3 text-sm sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] sm:gap-5">
       <dt className="min-w-0">
-        <span className="block wrap-break-word font-medium">{field.label}</span>
+        <span className="block wrap-break-word text-base font-medium">
+          {field.label}
+        </span>
         <span className="mt-2 flex flex-wrap items-center gap-2">
           <Badge variant={field.required ? "secondary" : "outline"}>
             {field.required ? "Required" : "Optional"}
@@ -279,29 +274,17 @@ export function ScrapeJobResult({ job }: { job: ScrapeJobDetail }) {
   const result = job.result
 
   return (
-    <section aria-labelledby="extraction-result-heading">
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            <h3 id="extraction-result-heading">Extraction Result</h3>
-          </CardTitle>
-          <CardDescription>
-            The values extracted from this Canonical Page URL.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <dl className="space-y-3">
-            {job.fields.map((field) => (
-              <ExtractionResultField
-                key={field.key}
-                canonicalPageUrl={job.url}
-                field={field}
-                value={result[field.key]}
-              />
-            ))}
-          </dl>
-        </CardContent>
-      </Card>
+    <section aria-label="Extraction Result">
+      <dl className="space-y-6">
+        {job.fields.map((field) => (
+          <ExtractionResultField
+            key={field.key}
+            canonicalPageUrl={job.url}
+            field={field}
+            value={result[field.key]}
+          />
+        ))}
+      </dl>
     </section>
   )
 }

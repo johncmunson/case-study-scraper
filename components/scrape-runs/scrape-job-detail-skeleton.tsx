@@ -41,32 +41,32 @@ export function ScrapeJobDetailSkeleton({ runId }: { runId?: string }) {
       </Breadcrumb>
 
       <section className="space-y-5" aria-hidden="true">
-        <Skeleton className="h-8 w-64 max-w-full" />
+        <div className="flex items-start justify-between gap-4">
+          <Skeleton className="h-8 w-64 max-w-full" />
+          <Skeleton className="h-7 w-24 shrink-0 rounded-full" />
+        </div>
 
         <Card>
           <CardHeader>
             <Skeleton className="h-4 w-32" />
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-4">
             <Skeleton className="h-5 w-full max-w-2xl" />
-            <Skeleton className="h-8 w-28" />
+            <Skeleton className="h-14 w-full max-w-3xl" />
           </CardContent>
         </Card>
-
-        <div className="space-y-3">
-          <Skeleton className="h-5 w-24" />
-          <Skeleton className="h-14 w-full max-w-3xl" />
-        </div>
       </section>
 
-      <Card aria-hidden="true">
-        <CardHeader>
-          <Skeleton className="h-5 w-48" />
-        </CardHeader>
-        <CardContent>
-          <Skeleton className="h-4 w-full max-w-xl" />
-        </CardContent>
-      </Card>
+      <div className="space-y-6" aria-hidden="true">
+        <div className="grid gap-3 rounded-lg border p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] sm:gap-5">
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-5 w-full max-w-xl" />
+        </div>
+        <div className="grid gap-3 rounded-lg border p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] sm:gap-5">
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-5 w-full max-w-xl" />
+        </div>
+      </div>
     </div>
   )
 }

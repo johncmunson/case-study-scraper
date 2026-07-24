@@ -54,8 +54,11 @@ describe("Scrape Job Extraction Result", () => {
 
     const result = screen.getByRole("region", { name: "Extraction Result" })
     expect(
-      within(result).getByRole("heading", { name: "Extraction Result" }),
-    ).toBeInTheDocument()
+      within(result).queryByRole("heading", { name: "Extraction Result" }),
+    ).not.toBeInTheDocument()
+    expect(result.querySelector('[data-slot="card"]')).not.toBeInTheDocument()
+    expect(result.querySelector("dl")).toHaveClass("space-y-6")
+    expect(result.querySelector("dl")?.children).toHaveLength(2)
 
     const terms = [...container.querySelectorAll("dt")]
     const definitions = [...container.querySelectorAll("dd")]
@@ -74,6 +77,7 @@ describe("Scrape Job Extraction Result", () => {
 
     const clientNameLabel = within(terms[0]).getByText("Client Name")
     const requiredBadge = within(terms[0]).getByText("Required")
+    expect(clientNameLabel).toHaveClass("text-base")
     expect(requiredBadge.parentElement?.previousElementSibling).toBe(
       clientNameLabel,
     )
@@ -86,13 +90,13 @@ describe("Scrape Job Extraction Result", () => {
     )
   })
 
-  it("qualifies only multiline values longer than 250 characters by content", () => {
+  it("qualifies only multiline values longer than 350 characters by content", () => {
     const values = {
-      line_feed: `${"a".repeat(249)}\nb`,
-      carriage_return: `${"a".repeat(249)}\rb`,
-      crlf: `${"a".repeat(248)}\r\nb`,
-      exact_boundary: `${"a".repeat(248)}\nb`,
-      long_single_line: "a".repeat(251),
+      line_feed: `${"a".repeat(349)}\nb`,
+      carriage_return: `${"a".repeat(349)}\rb`,
+      crlf: `${"a".repeat(348)}\r\nb`,
+      exact_boundary: `${"a".repeat(348)}\nb`,
+      long_single_line: "a".repeat(351),
     }
     const labels = {
       line_feed: "Line Feed",
@@ -483,7 +487,7 @@ describe("Scrape Job Extraction Result", () => {
     const longLabel = "Industry Classification With A Very Long User Facing Name"
     const longDescription =
       "An intentionally long field description that remains readable on narrow layouts"
-    const multilineValue = `${"First line with an intentionally long unbroken-value-for-responsive-layouts".padEnd(249, ".")}\r\nhttps://example.com/not-a-link`
+    const multilineValue = `${"First line with an intentionally long unbroken-value-for-responsive-layouts".padEnd(349, ".")}\r\nhttps://example.com/not-a-link`
     render(
       <ScrapeJobResult
         job={completeDetail({

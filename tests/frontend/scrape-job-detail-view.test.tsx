@@ -283,14 +283,14 @@ describe("Scrape Job detail loading and errors", () => {
     expect(screen.getByText("Extracting data from this page")).toBeInTheDocument()
     expect(screen.queryByRole("heading", { name: "Injected" })).not.toBeInTheDocument()
     expect(
-      screen.queryByRole("heading", { name: "Extraction Result" }),
+      screen.queryByRole("region", { name: "Extraction Result" }),
     ).not.toBeInTheDocument()
 
     window.dispatchEvent(new Event("online"))
     await waitFor(() => expect(requestCount).toBe(3))
     expect(screen.getByRole("heading", { name: "Acme" })).toBeInTheDocument()
     expect(
-      screen.getByRole("heading", { name: "Extraction Result" }),
+      screen.getByRole("region", { name: "Extraction Result" }),
     ).toBeInTheDocument()
   })
 })
@@ -322,31 +322,44 @@ describe("Scrape Job lifecycle shell", () => {
       "href",
       "/app/scrape-runs/17",
     )
-    expect(scoped.getByText(validScrapeJobDetail.url)).toBeInTheDocument()
-    expect(scoped.getByRole("link", { name: /Open page/ })).toHaveAttribute(
-      "href",
-      validScrapeJobDetail.url,
-    )
-    expect(scoped.getByRole("link", { name: /Open page/ })).toHaveAttribute(
-      "target",
-      "_blank",
-    )
-    expect(scoped.getByLabelText("Status: In progress")).toHaveTextContent(
-      "In progress",
-    )
-    expect(scoped.getByText("Attempts").nextElementSibling).toHaveTextContent("0")
+    const sourceLink = scoped.getByRole("link", {
+      name: /opens in a new tab/,
+    })
+    expect(sourceLink).toHaveTextContent(validScrapeJobDetail.url)
+    expect(sourceLink).toHaveAttribute("href", validScrapeJobDetail.url)
+    expect(sourceLink).toHaveAttribute("target", "_blank")
+    expect(sourceLink).toHaveClass("text-muted-foreground", "hover:text-primary")
+    expect(scoped.queryByText("Open page")).not.toBeInTheDocument()
+    expect(
+      scoped.queryByText("The normalized source page for this Scrape Job."),
+    ).not.toBeInTheDocument()
+
+    const titleRow = heading.parentElement
+    expect(titleRow).not.toBeNull()
+    expect(
+      within(titleRow as HTMLElement).getByLabelText("Status: In progress"),
+    ).toHaveTextContent("In progress")
+
+    const sourceCard = scoped
+      .getByRole("heading", { name: "Page URL" })
+      .closest('[data-slot="card"]')
+    expect(sourceCard).not.toBeNull()
+    const card = within(sourceCard as HTMLElement)
+    expect(card.queryByRole("separator")).not.toBeInTheDocument()
+    expect(sourceCard?.querySelector("hr")).toBeNull()
+    expect(card.getByText("Attempts").nextElementSibling).toHaveTextContent("0")
     for (const [label, timestamp] of [
       ["Created", validScrapeJobDetail.createdAt],
       ["Started", validScrapeJobDetail.startedAt],
       ["Finished", "2026-04-01T10:04:00.000Z"],
     ] as const) {
-      const term = scoped.getByText(label)
+      const term = card.getByText(label)
       expect(term.nextElementSibling?.querySelector("time")).toHaveAttribute(
         "datetime",
         timestamp,
       )
     }
-    expect(scoped.queryByText("Updated")).not.toBeInTheDocument()
+    expect(card.queryByText("Updated")).not.toBeInTheDocument()
     expect(screen.getByText("Extracting data from this page")).toBeInTheDocument()
   })
 
@@ -405,7 +418,7 @@ describe("Scrape Job lifecycle shell", () => {
     ).toBeInTheDocument()
     expect(screen.getByLabelText("Status: Complete")).toBeInTheDocument()
     expect(
-      screen.getByRole("heading", { name: "Extraction Result" }),
+      screen.getByRole("region", { name: "Extraction Result" }),
     ).toBeInTheDocument()
     expect(screen.getByText("Manufacturing")).toBeInTheDocument()
   })
@@ -424,7 +437,9 @@ describe("Scrape Job lifecycle shell", () => {
     await user.tab()
     expect(screen.getByRole("link", { name: "Customer stories" })).toHaveFocus()
     await user.tab()
-    expect(screen.getByRole("link", { name: /Open page/ })).toHaveFocus()
+    expect(
+      screen.getByRole("link", { name: /opens in a new tab/ }),
+    ).toHaveFocus()
   })
 
   it("renders a failed outcome without exposing a partial result", async () => {
@@ -450,7 +465,7 @@ describe("Scrape Job lifecycle shell", () => {
     expect(screen.getByLabelText("Status: Failed")).toBeInTheDocument()
     expect(screen.getByText("Client Name")).toBeInTheDocument()
     expect(
-      screen.queryByRole("heading", { name: "Extraction Result" }),
+      screen.queryByRole("region", { name: "Extraction Result" }),
     ).not.toBeInTheDocument()
   })
 })
@@ -542,7 +557,7 @@ describe("Scrape Job detail polling", () => {
     await vi.waitFor(() => expect(requestCount).toBe(2))
     expect(screen.getByRole("heading", { name: "Acme" })).toBeInTheDocument()
     expect(
-      screen.getByRole("heading", { name: "Extraction Result" }),
+      screen.getByRole("region", { name: "Extraction Result" }),
     ).toBeInTheDocument()
     expect(
       screen.queryByText("Extracting data from this page"),

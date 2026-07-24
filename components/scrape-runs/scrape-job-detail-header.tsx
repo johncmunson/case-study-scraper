@@ -10,11 +10,9 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
-import { buttonVariants } from "@/components/ui/button"
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -25,7 +23,6 @@ import {
   getScrapeJobHeading,
   getScrapeJobStatusLabel,
 } from "@/lib/scrape-runs/presentation"
-import { cn } from "@/lib/utils"
 
 type BadgeVariant = "default" | "secondary" | "destructive" | "outline"
 
@@ -93,39 +90,16 @@ export function ScrapeJobDetailHeader({ job }: { job: ScrapeJobDetail }) {
         </BreadcrumbList>
       </Breadcrumb>
 
-      <h2
-        id="scrape-job-heading"
-        className="wrap-break-word text-2xl font-semibold tracking-tight"
-      >
-        {heading}
-      </h2>
+      <div className="flex min-w-0 items-start justify-between gap-4">
+        <h2
+          id="scrape-job-heading"
+          className="wrap-break-word min-w-0 text-2xl font-semibold tracking-tight"
+        >
+          {heading}
+        </h2>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            <h3>Canonical Page URL</h3>
-          </CardTitle>
-          <CardDescription>
-            The normalized source page for this Scrape Job.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="wrap-anywhere select-text text-sm">{job.url}</p>
-          <a
-            className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-            href={job.url}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Open page
-            <ExternalLinkIcon aria-hidden="true" />
-            <span className="sr-only"> (opens in a new tab)</span>
-          </a>
-        </CardContent>
-      </Card>
-
-      <div className="space-y-3">
         <div
+          className="shrink-0"
           role="status"
           aria-label={`Scrape Job status: ${statusLabel}`}
           aria-live="polite"
@@ -133,25 +107,47 @@ export function ScrapeJobDetailHeader({ job }: { job: ScrapeJobDetail }) {
         >
           <Badge
             aria-label={`Status: ${statusLabel}`}
+            className="h-7 gap-1.5 px-3 text-sm [&>svg]:size-3.5!"
             variant={STATUS_BADGE_VARIANTS[job.status]}
           >
             {job.status === "in_progress" && <Spinner aria-hidden="true" />}
             {statusLabel}
           </Badge>
         </div>
-
-        <dl className="grid grid-cols-[max-content_minmax(0,1fr)] gap-x-3 gap-y-1 text-sm text-muted-foreground sm:grid-cols-[repeat(2,max-content_minmax(0,1fr))] sm:gap-x-4">
-          <dt className="font-medium text-foreground">Attempts</dt>
-          <dd>{job.attemptCount}</dd>
-          <JobTimestamp label="Created" timestamp={job.createdAt} />
-          {job.startedAt && (
-            <JobTimestamp label="Started" timestamp={job.startedAt} />
-          )}
-          {job.finishedAt && (
-            <JobTimestamp label="Finished" timestamp={job.finishedAt} />
-          )}
-        </dl>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <h3>Page URL</h3>
+                      <a
+            className="inline-flex max-w-full items-center gap-1 wrap-anywhere select-text text-sm text-muted-foreground underline underline-offset-4 hover:text-primary hover:decoration-primary focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+            href={job.url}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span>{job.url}</span>
+            <ExternalLinkIcon aria-hidden="true" className="size-3.5 shrink-0" />
+            <span className="sr-only"> (opens in a new tab)</span>
+          </a>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+
+
+          <dl className="grid grid-cols-[max-content_minmax(0,1fr)] gap-x-3 gap-y-1 text-sm text-muted-foreground sm:grid-cols-[repeat(2,max-content_minmax(0,1fr))] sm:gap-x-4">
+            <dt className="font-medium text-foreground">Attempts</dt>
+            <dd>{job.attemptCount}</dd>
+            <JobTimestamp label="Created" timestamp={job.createdAt} />
+            {job.startedAt && (
+              <JobTimestamp label="Started" timestamp={job.startedAt} />
+            )}
+            {job.finishedAt && (
+              <JobTimestamp label="Finished" timestamp={job.finishedAt} />
+            )}
+          </dl>
+        </CardContent>
+      </Card>
     </section>
   )
 }
