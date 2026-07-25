@@ -8,7 +8,7 @@ export default async function AppLayout({
   await requireSession()
 
   return (
-    <div className="min-h-full bg-muted/25 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-dvh bg-muted/25 px-4 sm:px-6 lg:px-8">
       <div className="mx-auto w-full max-w-6xl">{children}</div>
     </div>
   )
