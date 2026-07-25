@@ -12,6 +12,7 @@ import { POST_SIGN_IN_URL } from "@/auth/routes"
 import { getCurrentSession } from "@/auth/session"
 import { landingExtractionResults } from "@/components/landing/example-data"
 import { ProductPreview } from "@/components/landing/product-preview"
+import { ModeToggle } from "@/components/mode-toggle"
 import { buttonVariants } from "@/components/ui/button"
 import {
   Card,
@@ -197,7 +198,8 @@ export default async function LandingPage() {
               Use cases
             </Link>
           </nav>
-          <div className="ml-auto md:ml-2">
+          <div className="ml-auto flex items-center gap-2 md:ml-2">
+            <ModeToggle />
             <AccountActions isSignedIn={isSignedIn} />
           </div>
         </div>
