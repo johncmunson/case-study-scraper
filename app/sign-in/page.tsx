@@ -6,7 +6,6 @@ import { redirect } from "next/navigation"
 import { POST_SIGN_IN_URL } from "@/auth/routes"
 import { getCurrentSession } from "@/auth/session"
 import { SocialSignInButton } from "@/components/auth/social-sign-in-button"
-import { ModeToggle } from "@/components/mode-toggle"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
@@ -71,7 +70,6 @@ export default async function SignInPage() {
             Case Study Scraper
           </Link>
           <div className="flex items-center gap-2">
-            <ModeToggle />
             <Link
               href="/"
               className={cn(
