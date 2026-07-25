@@ -5,12 +5,7 @@ import { describe, expect, it, vi } from "vitest"
 import ScrapeJobDetailPage from "@/app/app/scrape-runs/[runId]/scrape-jobs/[jobId]/page"
 
 vi.mock("@/components/app/app-page", () => ({
-  AppPage: ({ children, title }: { children: ReactNode; title: string }) => (
-    <>
-      <h1>{title}</h1>
-      {children}
-    </>
-  ),
+  AppPage: ({ children }: { children: ReactNode }) => children,
 }))
 
 vi.mock("@/components/scrape-runs/scrape-job-detail-view", () => ({
@@ -30,9 +25,6 @@ describe("Scrape Job detail page", () => {
 
     render(await ScrapeJobDetailPage(props))
 
-    expect(
-      screen.getByRole("heading", { level: 1, name: "Scrape Job" }),
-    ).toBeInTheDocument()
     expect(screen.getByText("Job detail")).toHaveAttribute("data-run-id", "17")
     expect(screen.getByText("Job detail")).toHaveAttribute("data-job-id", "31")
   })

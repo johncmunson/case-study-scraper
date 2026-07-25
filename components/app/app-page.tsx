@@ -4,13 +4,12 @@ import { AppHeader } from "@/components/app/app-header"
 
 type AppPageProps = {
   children: ReactNode
-  title: string
 }
 
-export function AppPage({ children, title }: AppPageProps) {
+export function AppPage({ children }: AppPageProps) {
   return (
     <>
-      <AppHeader title={title} />
+      <AppHeader />
       <main className="py-8">{children}</main>
     </>
   )

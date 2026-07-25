@@ -7,7 +7,7 @@ export default async function ScrapeJobDetailPage(
   const { runId, jobId } = await props.params
 
   return (
-    <AppPage title="Scrape Job">
+    <AppPage>
       <ScrapeJobDetailView
         key={`${runId}:${jobId}`}
         runId={runId}

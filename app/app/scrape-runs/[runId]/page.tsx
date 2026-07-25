@@ -7,7 +7,7 @@ export default async function ScrapeRunDetailPage(
   const { runId } = await props.params
 
   return (
-    <AppPage title="Scrape Run">
+    <AppPage>
       <ScrapeRunDetailView key={runId} runId={runId} />
     </AppPage>
   )

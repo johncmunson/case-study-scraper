@@ -91,7 +91,9 @@ describe("Scrape Run detail loading and errors", () => {
   it("renders the route-transition shell with back navigation", () => {
     const { container } = render(<ScrapeRunDetailLoading />)
 
-    expect(screen.getByRole("heading", { level: 1, name: "Scrape Run" })).toBeInTheDocument()
+    expect(
+      screen.getByRole("link", { name: "Case Study Scraper" }),
+    ).toHaveAttribute("href", "/app/scrape-runs")
     expect(screen.getByRole("link", { name: "Scrape Runs" })).toHaveAttribute(
       "href",
       "/app/scrape-runs",

@@ -58,8 +58,8 @@ describe("Scrape Job detail loading and errors", () => {
     const { container } = render(<ScrapeJobDetailLoading />)
 
     expect(
-      screen.getByRole("heading", { level: 1, name: "Scrape Job" }),
-    ).toBeInTheDocument()
+      screen.getByRole("link", { name: "Case Study Scraper" }),
+    ).toHaveAttribute("href", "/app/scrape-runs")
     expect(screen.getByRole("link", { name: "Scrape Runs" })).toHaveAttribute(
       "href",
       "/app/scrape-runs",

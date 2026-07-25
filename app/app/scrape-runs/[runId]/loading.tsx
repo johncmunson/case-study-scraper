@@ -3,7 +3,7 @@ import { ScrapeRunDetailSkeleton } from "@/components/scrape-runs/scrape-run-det
 
 export default function ScrapeRunDetailLoading() {
   return (
-    <AppPage title="Scrape Run">
+    <AppPage>
       <ScrapeRunDetailSkeleton />
     </AppPage>
   )
