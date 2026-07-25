@@ -61,6 +61,49 @@ describe("Scrape Run list states", () => {
     ).toHaveLength(1)
   })
 
+  it("paginates scrape runs 15 at a time and clamps when the list shrinks", async () => {
+    const runs = Array.from({ length: 31 }, (_, index) =>
+      summary({ id: index + 1, name: `Run ${index + 1}` }),
+    )
+    const { rerender } = renderWithSwr(
+      <ScrapeRunList summaries={runs} error={undefined} onRetry={vi.fn()} />,
+    )
+
+    expect(screen.getByRole("heading", { name: "Run 1" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Run 15" })).toBeInTheDocument()
+    expect(screen.queryByRole("heading", { name: "Run 16" })).not.toBeInTheDocument()
+    expect(screen.queryByText(/\d+–\d+ of \d+ runs/)).not.toBeInTheDocument()
+    expect(screen.getByText("Page 1 of 3")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Previous page" })).toBeDisabled()
+
+    await userEvent.click(screen.getByRole("button", { name: "Next page" }))
+
+    expect(screen.getByRole("heading", { name: "Run 16" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Run 30" })).toBeInTheDocument()
+    expect(screen.queryByRole("heading", { name: "Run 15" })).not.toBeInTheDocument()
+    expect(screen.getByText("Page 2 of 3")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Next page" })).toBeEnabled()
+
+    await userEvent.click(screen.getByRole("button", { name: "Next page" }))
+
+    expect(screen.getByRole("heading", { name: "Run 31" })).toBeInTheDocument()
+    expect(screen.queryByRole("heading", { name: "Run 30" })).not.toBeInTheDocument()
+    expect(screen.getByText("Page 3 of 3")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Next page" })).toBeDisabled()
+
+    rerender(
+      <ScrapeRunList
+        summaries={runs.slice(0, 5)}
+        error={undefined}
+        onRetry={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByRole("heading", { name: "Run 1" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Run 5" })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Next page" })).not.toBeInTheDocument()
+  })
+
   it("renders every status and state-aware Scrape Job summary", () => {
     const runs = [
       summary({
