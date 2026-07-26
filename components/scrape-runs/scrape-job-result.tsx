@@ -98,6 +98,7 @@ function MarkdownAction({
         render={
           <Button
             aria-label={label}
+            className="cursor-pointer"
             onClick={onToggle}
             size="icon-sm"
             type="button"

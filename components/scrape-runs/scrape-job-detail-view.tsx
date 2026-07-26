@@ -44,7 +44,13 @@ function isRecoverableDetailError(error: ScrapeRunApiError) {
 
 function RetryButton({ onRetry }: { onRetry: () => void }) {
   return (
-    <Button type="button" variant="outline" size="sm" onClick={onRetry}>
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      className="cursor-pointer"
+      onClick={onRetry}
+    >
       Retry
     </Button>
   )

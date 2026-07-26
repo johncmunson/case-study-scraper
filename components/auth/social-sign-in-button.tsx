@@ -5,6 +5,7 @@ import { useState, type ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { authClient } from "@/auth/auth-client"
 import { POST_SIGN_IN_URL } from "@/auth/routes"
+import { cn } from "@/lib/utils"
 
 type SocialProvider = Parameters<typeof authClient.signIn.social>[0]["provider"]
 
@@ -41,7 +42,7 @@ export function SocialSignInButton({
     <div className="flex flex-col gap-3">
       <Button
         type="button"
-        className={className}
+        className={cn("cursor-pointer", className)}
         onClick={handleSignIn}
         disabled={isPending}
       >

@@ -144,6 +144,7 @@ export function ScrapeRunCardActions({ run }: { run: ScrapeRunSummary }) {
             <Button
               ref={triggerRef}
               aria-label={`Actions for ${run.name}`}
+              className="cursor-pointer"
               size="icon-sm"
               variant="ghost"
               disabled={isMutating}
@@ -154,6 +155,7 @@ export function ScrapeRunCardActions({ run }: { run: ScrapeRunSummary }) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem
+            className="cursor-pointer"
             variant="destructive"
             onClick={() => {
               const action = availableAction
@@ -190,11 +192,16 @@ export function ScrapeRunCardActions({ run }: { run: ScrapeRunSummary }) {
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel ref={neutralButtonRef} disabled={isMutating}>
+              <AlertDialogCancel
+                ref={neutralButtonRef}
+                className="cursor-pointer"
+                disabled={isMutating}
+              >
                 {selectedContent.neutralLabel}
               </AlertDialogCancel>
               <AlertDialogAction
                 type="button"
+                className="cursor-pointer"
                 variant="destructive"
                 disabled={isMutating}
                 onClick={() => void confirmAction()}

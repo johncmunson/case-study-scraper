@@ -247,7 +247,13 @@ function NoFilteredJobs({
           No jobs have the {statusLabel} status.
         </EmptyDescription>
       </EmptyHeader>
-      <Button type="button" variant="outline" size="sm" onClick={onShowAll}>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="cursor-pointer"
+        onClick={onShowAll}
+      >
         Show all jobs
       </Button>
     </Empty>
@@ -306,22 +312,32 @@ export function ScrapeJobSummaryTable({ run }: { run: ScrapeRunDetail }) {
             <>
               <div className="flex flex-wrap items-end justify-between gap-3">
                 <div className="space-y-1.5">
-                  <Label htmlFor={`scrape-job-status-${run.id}`}>
+                  <Label
+                    htmlFor={`scrape-job-status-${run.id}`}
+                    className="cursor-pointer"
+                  >
                     Filter by status
                   </Label>
                   <Select value={statusFilter} onValueChange={setFilter}>
                     <SelectTrigger
                       id={`scrape-job-status-${run.id}`}
                       aria-label="Filter by status"
-                      className="min-w-44"
+                      className="min-w-44 cursor-pointer"
                     >
                       <SelectValue>
                         {getFilterLabel(statusFilter)} ({statusCounts[statusFilter]})
                       </SelectValue>
                     </SelectTrigger>
-                    <SelectContent align="start">
+                    <SelectContent
+                      align="start"
+                      className="[&_[data-slot=select-scroll-down-button]]:cursor-pointer [&_[data-slot=select-scroll-up-button]]:cursor-pointer"
+                    >
                       {STATUS_FILTERS.map((filter) => (
-                        <SelectItem key={filter} value={filter}>
+                        <SelectItem
+                          key={filter}
+                          value={filter}
+                          className="cursor-pointer"
+                        >
                           {getFilterLabel(filter)} ({statusCounts[filter]})
                         </SelectItem>
                       ))}
@@ -388,6 +404,7 @@ export function ScrapeJobSummaryTable({ run }: { run: ScrapeRunDetail }) {
                           <Button
                             type="button"
                             variant="ghost"
+                            className="cursor-pointer"
                             disabled={page === 1}
                             aria-label="Previous page"
                             onClick={() => setRequestedPage(page - 1)}
@@ -405,6 +422,7 @@ export function ScrapeJobSummaryTable({ run }: { run: ScrapeRunDetail }) {
                           <Button
                             type="button"
                             variant="ghost"
+                            className="cursor-pointer"
                             disabled={page === totalPages}
                             aria-label="Next page"
                             onClick={() => setRequestedPage(page + 1)}

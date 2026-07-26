@@ -61,6 +61,7 @@ export function CancelScrapeRunDialog({
               <TooltipTrigger
                 render={
                   <Button
+                    className="cursor-pointer"
                     size="icon-sm"
                     variant={isRetry ? "outline" : "destructive"}
                   />
@@ -87,11 +88,15 @@ export function CancelScrapeRunDialog({
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel disabled={isMutating}>
+              <AlertDialogCancel
+                className="cursor-pointer"
+                disabled={isMutating}
+              >
                 Keep running
               </AlertDialogCancel>
               <AlertDialogAction
                 type="button"
+                className="cursor-pointer"
                 variant="destructive"
                 disabled={isMutating}
                 onClick={() => {

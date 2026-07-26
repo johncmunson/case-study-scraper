@@ -33,6 +33,7 @@ export function SignOutButton() {
       type="button"
       variant="ghost"
       size="icon"
+      className="cursor-pointer"
       onClick={handleSignOut}
       disabled={isSigningOut}
       aria-label={isSigningOut ? "Signing out" : "Sign out"}

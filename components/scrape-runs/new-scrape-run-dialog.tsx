@@ -228,6 +228,7 @@ function NewScrapeRunForm({
                 type="button"
                 variant="outline"
                 size="sm"
+                className="cursor-pointer"
                 disabled={exampleUrls.length >= MAX_EXAMPLE_URLS}
                 onClick={addExampleUrl}
               >
@@ -256,6 +257,7 @@ function NewScrapeRunForm({
                     type="button"
                     variant="ghost"
                     size="icon"
+                    className="cursor-pointer"
                     aria-label={`Remove example URL ${index + 1}`}
                     disabled={exampleUrls.length <= MIN_EXAMPLE_URLS}
                     onClick={() => removeExampleUrl(exampleUrl.id)}
@@ -278,6 +280,7 @@ function NewScrapeRunForm({
                 type="button"
                 variant="outline"
                 size="sm"
+                className="cursor-pointer"
                 disabled={fields.length >= MAX_FIELDS}
                 onClick={addField}
               >
@@ -305,6 +308,7 @@ function NewScrapeRunForm({
                       type="button"
                       variant="ghost"
                       size="icon-sm"
+                      className="cursor-pointer"
                       aria-label={`Remove field ${index + 1}`}
                       disabled={fields.length <= MIN_FIELDS}
                       onClick={() => removeField(field.id)}
@@ -347,6 +351,7 @@ function NewScrapeRunForm({
                     <Field orientation="horizontal" className="w-auto">
                       <Checkbox
                         id={`${formId}-field-${field.id}-required`}
+                        className="cursor-pointer"
                         checked={field.required}
                         disabled={field.primaryIdentifier}
                         onCheckedChange={(checked) =>
@@ -355,6 +360,7 @@ function NewScrapeRunForm({
                       />
                       <FieldLabel
                         htmlFor={`${formId}-field-${field.id}-required`}
+                        className="cursor-pointer"
                       >
                         Required?
                       </FieldLabel>
@@ -363,10 +369,12 @@ function NewScrapeRunForm({
                     <Field orientation="horizontal" className="w-auto">
                       <RadioGroupItem
                         id={`${formId}-field-${field.id}-primary`}
+                        className="cursor-pointer"
                         value={String(field.id)}
                       />
                       <FieldLabel
                         htmlFor={`${formId}-field-${field.id}-primary`}
+                        className="cursor-pointer"
                       >
                         Primary Identifier?
                       </FieldLabel>
@@ -388,7 +396,11 @@ function NewScrapeRunForm({
               creating a new one.
             </p>
           )}
-          <Button type="submit" disabled={isMutating || hasActiveRun}>
+          <Button
+            type="submit"
+            className="cursor-pointer"
+            disabled={isMutating || hasActiveRun}
+          >
             {isMutating && <Spinner />}
             {isMutating ? "Creating…" : "Create Scrape Run"}
           </Button>
@@ -437,7 +449,11 @@ export function NewScrapeRunDialog({
             />
           }
         >
-          <DialogTrigger render={<Button disabled={hasActiveRun} />}>
+          <DialogTrigger
+            render={
+              <Button className="cursor-pointer" disabled={hasActiveRun} />
+            }
+          >
             <PlusIcon />
             Create New Scrape Run
           </DialogTrigger>
@@ -450,7 +466,7 @@ export function NewScrapeRunDialog({
       </Tooltip>
       {open && (
         <DialogContent
-          className="max-h-[calc(100svh-2rem)] grid-rows-[auto_minmax(0,1fr)] sm:max-w-2xl"
+          className="max-h-[calc(100svh-2rem)] grid-rows-[auto_minmax(0,1fr)] [&_[data-slot=dialog-close]]:cursor-pointer sm:max-w-2xl"
           closeButtonDisabled={isMutating}
           finalFocus={hasActiveRun ? unavailableCreateControlRef : true}
         >

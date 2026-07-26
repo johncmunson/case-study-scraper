@@ -34,7 +34,7 @@ export function ScrapeRunConfiguration({ run }: { run: ScrapeRunDetail }) {
           <CollapsibleTrigger
             className={cn(
               buttonVariants({ variant: "outline" }),
-              "group w-full justify-between px-4",
+              "group w-full cursor-pointer justify-between px-4",
             )}
           >
             <span className="font-semibold">Run Configuration</span>

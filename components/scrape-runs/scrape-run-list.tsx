@@ -43,7 +43,13 @@ type ScrapeRunListProps = {
 
 function RetryButton({ onRetry }: { onRetry: () => void }) {
   return (
-    <Button type="button" variant="outline" size="sm" onClick={onRetry}>
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      className="cursor-pointer"
+      onClick={onRetry}
+    >
       Retry
     </Button>
   )
@@ -147,6 +153,7 @@ export function ScrapeRunList({
                   <Button
                     type="button"
                     variant="ghost"
+                    className="cursor-pointer"
                     disabled={page === 1}
                     aria-label="Previous page"
                     onClick={() => setRequestedPage(page - 1)}
@@ -164,6 +171,7 @@ export function ScrapeRunList({
                   <Button
                     type="button"
                     variant="ghost"
+                    className="cursor-pointer"
                     disabled={page === totalPages}
                     aria-label="Next page"
                     onClick={() => setRequestedPage(page + 1)}

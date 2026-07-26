@@ -59,7 +59,7 @@ function DownloadButton({
       {...props}
       type="button"
       variant="outline"
-      className={cn("w-full sm:w-auto", className)}
+      className={cn("w-full cursor-pointer sm:w-auto", className)}
       disabled={disabled || preparing}
       aria-busy={preparing}
     >
@@ -171,10 +171,16 @@ export function DownloadExtractionDataset({
           </DropdownMenuLabel>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => void download("csv")}>
+        <DropdownMenuItem
+          className="cursor-pointer"
+          onClick={() => void download("csv")}
+        >
           Download CSV
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => void download("json")}>
+        <DropdownMenuItem
+          className="cursor-pointer"
+          onClick={() => void download("json")}
+        >
           Download JSON
         </DropdownMenuItem>
       </DropdownMenuContent>
