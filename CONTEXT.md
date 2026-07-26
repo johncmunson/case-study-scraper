@@ -41,7 +41,7 @@ The irreversible removal of a terminal Scrape Run and all of its associated conf
 _Avoid_: Archive, soft delete
 
 **Run Status**:
-The current lifecycle classification determined by preparation and scrape-job outcomes. Mixed successful and failed jobs produce a completed scrape run.
+The lifecycle outcome reached by a scrape run during execution. Mixed successful and failed jobs produce a completed scrape run, and later Job Deletion does not revise that recorded outcome.
 _Avoid_: Workflow status, manually assigned outcome
 
 **Target Site**:
@@ -67,6 +67,10 @@ _Avoid_: Similar page, filtered URL
 **Scrape Job**:
 The extraction attempt for one matching page within a scrape run.
 _Avoid_: Scrape run, workflow step
+
+**Job Deletion**:
+The irreversible removal of one Scrape Job from a terminal Scrape Run, including its Canonical Page URL, lifecycle record, diagnostics, and Extraction Result. A terminal Scrape Run may retain zero jobs after deletion, and any deleted result is no longer part of its Extraction Dataset.
+_Avoid_: Result exclusion, hide result, archive job
 
 **Extraction Field**:
 A user-defined item to collect from every matching page. An extraction field may be required or optional.
