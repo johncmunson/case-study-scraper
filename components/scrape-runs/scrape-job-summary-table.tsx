@@ -47,7 +47,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { isTerminalScrapeJobStatus } from "@/lib/scrape-runs/contracts"
 import {
   getScrapeJobDetailPath,
   type ScrapeJobSummary,
@@ -57,7 +56,6 @@ import {
   SCRAPE_JOB_PAGE_SIZE,
   clampScrapeJobPage,
   filterScrapeJobsByStatus,
-  formatScrapeRunTimestamp,
   getPrimaryIdentifierField,
   getScrapeJobStatusCounts,
   getScrapeJobStatusLabel,
@@ -133,24 +131,6 @@ function JobStatus({ job }: { job: ScrapeJobSummary }) {
   )
 }
 
-function FinishedTime({ job }: { job: ScrapeJobSummary }) {
-  if (!isTerminalScrapeJobStatus(job.status) || !job.finishedAt) {
-    return <>—</>
-  }
-
-  const formatted = formatScrapeRunTimestamp(job.finishedAt)
-
-  return (
-    <time
-      aria-label={`Finished ${formatted}`}
-      dateTime={job.finishedAt}
-      suppressHydrationWarning
-    >
-      {formatted}
-    </time>
-  )
-}
-
 function ScrapeJobRow({
   job,
   primaryIdentifierLabel,
@@ -192,24 +172,15 @@ function ScrapeJobRow({
           />
         </div>
       </TableCell>
-      <TableCell className="hidden max-w-80 md:table-cell">
+      <TableCell className="hidden md:table-cell">
         <JobUrlLink
-          className="block max-w-80 truncate text-muted-foreground underline-offset-4 hover:text-primary hover:decoration-primary hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="block truncate text-muted-foreground underline-offset-4 hover:text-primary hover:decoration-primary hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           job={job}
           runId={runId}
         />
       </TableCell>
       <TableCell className="whitespace-normal">
         <JobStatus job={job} />
-      </TableCell>
-      <TableCell data-column="attempts" className="hidden lg:table-cell">
-        {job.attemptCount}
-      </TableCell>
-      <TableCell
-        data-column="finished"
-        className="hidden text-muted-foreground lg:table-cell"
-      >
-        <FinishedTime job={job} />
       </TableCell>
     </TableRow>
   )
@@ -220,7 +191,9 @@ function ZeroJobs({ active }: { active: boolean }) {
     <Empty className="min-h-40 border">
       <EmptyHeader>
         <EmptyTitle>
-          {active ? "Matching pages are being prepared" : "No scrape jobs created"}
+          {active
+            ? "Matching pages are being prepared"
+            : "No scrape jobs created"}
         </EmptyTitle>
         {active && (
           <EmptyDescription>
@@ -263,11 +236,11 @@ function NoFilteredJobs({
 }
 
 export function ScrapeJobSummaryTable({ run }: { run: ScrapeRunDetail }) {
-  const [statusFilter, setStatusFilter] =
-    useState<ScrapeJobStatusFilter>("all")
+  const [statusFilter, setStatusFilter] = useState<ScrapeJobStatusFilter>("all")
   const [requestedPage, setRequestedPage] = useState(1)
   const primaryIdentifier = getPrimaryIdentifierField(run.fields)
-  const primaryIdentifierLabel = primaryIdentifier?.label ?? "Primary Identifier"
+  const primaryIdentifierLabel =
+    primaryIdentifier?.label ?? "Primary Identifier"
   const statusCounts = getScrapeJobStatusCounts(run.jobs)
   // Pagination bounds rendering only; the accepted read contract still validates every job.
   const filteredJobs = filterScrapeJobsByStatus(run.jobs, statusFilter)
@@ -296,7 +269,8 @@ export function ScrapeJobSummaryTable({ run }: { run: ScrapeRunDetail }) {
             <h3 id="scrape-jobs-heading">Scrape Jobs</h3>
           </CardTitle>
           <CardDescription>
-            Browse extraction attempts for the matching pages in this Scrape Run.
+            Browse extraction attempts for the matching pages in this Scrape
+            Run.
           </CardDescription>
           <CardAction className="col-start-1 row-span-1 row-start-3 justify-self-stretch pt-2 sm:col-start-2 sm:row-span-2 sm:row-start-1 sm:justify-self-end sm:pt-0">
             <DownloadExtractionDataset
@@ -327,12 +301,13 @@ export function ScrapeJobSummaryTable({ run }: { run: ScrapeRunDetail }) {
                       className="min-w-44 cursor-pointer"
                     >
                       <SelectValue>
-                        {getFilterLabel(statusFilter)} ({statusCounts[statusFilter]})
+                        {getFilterLabel(statusFilter)} (
+                        {statusCounts[statusFilter]})
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent
                       align="start"
-                      className="[&_[data-slot=select-scroll-down-button]]:cursor-pointer [&_[data-slot=select-scroll-up-button]]:cursor-pointer"
+                      className="**:data-[slot=select-scroll-down-button]:cursor-pointer **:data-[slot=select-scroll-up-button]:cursor-pointer"
                     >
                       {STATUS_FILTERS.map((filter) => (
                         <SelectItem
@@ -347,7 +322,10 @@ export function ScrapeJobSummaryTable({ run }: { run: ScrapeRunDetail }) {
                   </Select>
                 </div>
                 {filteredJobs.length > 0 && (
-                  <p className="text-sm text-muted-foreground" aria-live="polite">
+                  <p
+                    className="text-sm text-muted-foreground"
+                    aria-live="polite"
+                  >
                     {range.start}–{range.end} of {range.total} jobs
                   </p>
                 )}
@@ -366,24 +344,14 @@ export function ScrapeJobSummaryTable({ run }: { run: ScrapeRunDetail }) {
                   <Table aria-label="Scrape Jobs" className="table-fixed">
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[48%] wrap-anywhere whitespace-normal md:w-[28%]">
+                        <TableHead className="w-[48%] wrap-anywhere whitespace-normal md:w-[32%]">
                           {primaryIdentifierLabel}
                         </TableHead>
-                        <TableHead className="hidden w-[36%] md:table-cell">
+                        <TableHead className="hidden w-[52%] md:table-cell">
                           Page URL
                         </TableHead>
-                        <TableHead className="w-[52%] md:w-[18%]">Status</TableHead>
-                        <TableHead
-                          data-column="attempts"
-                          className="hidden w-[8%] lg:table-cell"
-                        >
-                          Attempts
-                        </TableHead>
-                        <TableHead
-                          data-column="finished"
-                          className="hidden w-[20%] lg:table-cell"
-                        >
-                          Finished
+                        <TableHead className="w-[52%] md:w-[12%]">
+                          Status
                         </TableHead>
                       </TableRow>
                     </TableHeader>

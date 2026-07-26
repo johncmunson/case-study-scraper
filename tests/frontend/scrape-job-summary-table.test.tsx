@@ -77,9 +77,7 @@ describe("Scrape Job summary table", () => {
       }),
     ]
 
-    const { container } = render(
-      <ScrapeJobSummaryTable run={run(jobs)} />,
-    )
+    render(<ScrapeJobSummaryTable run={run(jobs)} />)
 
     const table = screen.getByRole("table", { name: "Scrape Jobs" })
     expect(within(table).getByRole("columnheader", { name: "Client Name" })).toBeInTheDocument()
@@ -94,7 +92,12 @@ describe("Scrape Job summary table", () => {
     )
     expect(within(table).queryByText("Must not be shown")).not.toBeInTheDocument()
     expect(within(table).queryByText("missing_required_fields")).not.toBeInTheDocument()
-    expect(within(table).getByText("2")).toBeInTheDocument()
+    expect(
+      within(table).queryByRole("columnheader", { name: "Attempts" }),
+    ).not.toBeInTheDocument()
+    expect(
+      within(table).queryByRole("columnheader", { name: "Finished" }),
+    ).not.toBeInTheDocument()
 
     const failedRow = within(table).getAllByRole("row")[2]
     expect(
@@ -103,9 +106,6 @@ describe("Scrape Job summary table", () => {
     expect(
       within(failedRow).getByRole("link", { name: "Client Name: Not available" }),
     ).toHaveTextContent("—")
-
-    const finishedTime = within(table).getAllByText((_, element) => element?.tagName === "TIME")[0]
-    expect(finishedTime).toHaveAttribute("datetime", "2026-04-01T10:03:00.000Z")
 
     const urlLinks = within(table).getAllByRole("link", {
       name: "https://www.example.com/customers/customer-41",
@@ -123,8 +123,6 @@ describe("Scrape Job summary table", () => {
     expect(
       within(table).getByRole("columnheader", { name: "Status" }),
     ).not.toHaveClass("hidden")
-    expect(container.querySelector('[data-column="attempts"]')).toHaveClass("hidden")
-    expect(container.querySelector('[data-column="finished"]')).toHaveClass("hidden")
   })
 
   it("keeps long labels, identifiers, and URLs accessible on narrow layouts", async () => {
