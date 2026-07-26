@@ -39,6 +39,7 @@ export const validScrapeJobDetail = {
   scrapeRun: {
     id: 17,
     name: "Customer stories",
+    status: "pending",
   },
   fields: [
     {

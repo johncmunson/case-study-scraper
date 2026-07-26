@@ -123,6 +123,7 @@ const jobDetail = {
   scrapeRun: {
     id: 17,
     name: "Customer stories",
+    status: "complete" as const,
   },
   fields: [
     {
@@ -313,7 +314,11 @@ describe("scrape-run read routes", () => {
       startedAt: "2026-04-01T10:03:00.000Z",
       finishedAt: "2026-04-01T10:04:00.000Z",
     })
-    expect(body.scrapeRun).toEqual({ id: 17, name: "Customer stories" })
+    expect(body.scrapeRun).toEqual({
+      id: 17,
+      name: "Customer stories",
+      status: "complete",
+    })
     expect(body).not.toHaveProperty("workflowRunId")
     expect(body).not.toHaveProperty("scrapeRun.targetUrl")
     expect(body).not.toHaveProperty("scrapeRun.jobs")

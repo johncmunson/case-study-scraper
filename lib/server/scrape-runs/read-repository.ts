@@ -188,6 +188,7 @@ export async function findOwnedScrapeJobDetail({
       scrapeRun: {
         id: scrapeRuns.id,
         name: scrapeRuns.name,
+        status: scrapeRuns.status,
       },
       field: {
         position: scrapeRunFields.position,

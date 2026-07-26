@@ -276,6 +276,7 @@ export const scrapeJobDetailSchema = z
       .object({
         id: positiveIntegerSchema,
         name: z.string().min(1).max(100),
+        status: scrapeRunStatusSchema,
       })
       .strict(),
     fields: scrapeJobDetailFieldsSchema,
@@ -519,6 +520,22 @@ export async function deleteScrapeRun(url: string): Promise<void> {
     url,
     { method: "DELETE" },
     "Unable to delete the scrape run.",
+  )
+
+  if (!response.ok) {
+    throw await scrapeRunApiErrorFromResponse(response)
+  }
+
+  if (response.status !== 204) {
+    throw invalidResponseError(response)
+  }
+}
+
+export async function deleteScrapeJob(url: string): Promise<void> {
+  const response = await fetchResponse(
+    url,
+    { method: "DELETE" },
+    "Unable to delete the scrape job.",
   )
 
   if (!response.ok) {

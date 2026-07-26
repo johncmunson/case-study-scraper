@@ -12,21 +12,32 @@ import {
 import { renderWithSwr } from "@/tests/frontend/render"
 import {
   validScrapeJobDetail,
+  validScrapeRunDetail,
   validScrapeRunSummary,
 } from "@/tests/frontend/scrape-run-fixtures"
 import { server } from "@/tests/mocks/server"
 
-const toastErrorMock = vi.hoisted(() => vi.fn())
+const { routerReplaceMock, toastErrorMock, toastSuccessMock, toastWarningMock } =
+  vi.hoisted(() => ({
+    routerReplaceMock: vi.fn(),
+    toastErrorMock: vi.fn(),
+    toastSuccessMock: vi.fn(),
+    toastWarningMock: vi.fn(),
+  }))
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
     refresh: vi.fn(),
-    replace: vi.fn(),
+    replace: routerReplaceMock,
   }),
 }))
 
 vi.mock("sonner", () => ({
-  toast: { error: toastErrorMock },
+  toast: {
+    error: toastErrorMock,
+    success: toastSuccessMock,
+    warning: toastWarningMock,
+  },
 }))
 
 const apiUrl = "http://localhost/api/scrape-runs/17/scrape-jobs/31"
@@ -54,6 +65,75 @@ function renderDetail(
 }
 
 describe("Scrape Job detail loading and errors", () => {
+  it("deletes a Job only for a terminal parent, warms the parent cache, and replaces navigation", async () => {
+    const terminalJob = detail({
+      scrapeRun: { ...validScrapeJobDetail.scrapeRun, status: "complete" },
+    })
+    let deleted = false
+    server.use(
+      http.get(apiUrl, () => HttpResponse.json(terminalJob)),
+      http.delete(apiUrl, () => {
+        deleted = true
+        return new HttpResponse(null, { status: 204 })
+      }),
+      http.get("http://localhost/api/scrape-runs", () =>
+        HttpResponse.json([
+          {
+            ...validScrapeRunSummary,
+            status: "complete",
+            finishedAt: "2026-04-01T10:10:00.000Z",
+          },
+        ]),
+      ),
+      http.get(parentApiUrl, () =>
+        HttpResponse.json({
+          ...validScrapeRunDetail,
+          status: "complete",
+          jobs: validScrapeRunDetail.jobs.filter(({ id }) => id !== 31),
+          jobCounts: {
+            ...validScrapeRunDetail.jobCounts,
+            total: validScrapeRunDetail.jobCounts.total - 1,
+            complete: validScrapeRunDetail.jobCounts.complete - 1,
+          },
+        }),
+      ),
+    )
+
+    renderDetail()
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Delete Scrape Job" }),
+    )
+    expect(screen.getByText("Delete Scrape Job?")).toBeInTheDocument()
+    expect(screen.getByText(/including its lifecycle record/)).toHaveTextContent(
+      "This action cannot be undone.",
+    )
+    await userEvent.click(
+      within(screen.getByRole("alertdialog")).getByRole("button", {
+        name: "Delete Scrape Job",
+      }),
+    )
+
+    await waitFor(() => expect(deleted).toBe(true))
+    await waitFor(() =>
+      expect(routerReplaceMock).toHaveBeenCalledWith("/app/scrape-runs/17"),
+    )
+    expect(toastSuccessMock).toHaveBeenCalledWith("Scrape Job deleted", {
+      position: "bottom-center",
+    })
+  })
+
+  it("hides deletion while the parent Run is active", async () => {
+    server.use(http.get(apiUrl, () => HttpResponse.json(validScrapeJobDetail)))
+
+    renderDetail()
+
+    expect(await screen.findByText("Extracting data from this page")).toBeInTheDocument()
+    expect(
+      screen.queryByRole("button", { name: "Delete Scrape Job" }),
+    ).not.toBeInTheDocument()
+  })
+
   it("renders the route-transition shell with back navigation", () => {
     const { container } = render(<ScrapeJobDetailLoading />)
 
@@ -504,6 +584,10 @@ describe("Scrape Job detail polling", () => {
             : detail({
                 status: "cancelled",
                 finishedAt: "2026-04-01T10:04:00.000Z",
+                scrapeRun: {
+                  ...validScrapeJobDetail.scrapeRun,
+                  status: "cancelled",
+                },
               }),
         )
       }),
@@ -542,6 +626,10 @@ describe("Scrape Job detail polling", () => {
                   industry: "Manufacturing",
                 },
                 finishedAt: "2026-04-01T10:04:00.000Z",
+                scrapeRun: {
+                  ...validScrapeJobDetail.scrapeRun,
+                  status: "complete",
+                },
               }),
         )
       }),
@@ -579,6 +667,10 @@ describe("Scrape Job detail polling", () => {
                 failureMessage: "A required value was not found.",
                 missingRequiredFieldKeys: ["client_name"],
                 finishedAt: "2026-04-01T10:04:00.000Z",
+                scrapeRun: {
+                  ...validScrapeJobDetail.scrapeRun,
+                  status: "failed",
+                },
               }),
         )
       }),
@@ -659,6 +751,10 @@ describe("Scrape Job detail polling", () => {
             status: "complete",
             result: { client_name: "Acme", industry: "Manufacturing" },
             finishedAt: "2026-04-01T10:04:00.000Z",
+            scrapeRun: {
+              ...validScrapeJobDetail.scrapeRun,
+              status: "complete",
+            },
           }),
         )
       }),

@@ -4,6 +4,7 @@ import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
 
+import { DeleteScrapeJobDialog } from "@/components/scrape-runs/delete-scrape-job-dialog"
 import { DownloadExtractionDataset } from "@/components/scrape-runs/download-extraction-dataset"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -135,10 +136,12 @@ function ScrapeJobRow({
   job,
   primaryIdentifierLabel,
   runId,
+  showActions,
 }: {
   job: ScrapeJobSummary
   primaryIdentifierLabel: string
   runId: number
+  showActions: boolean
 }) {
   const showPrimaryIdentifier =
     job.status === "complete" && job.primaryIdentifier !== null
@@ -182,6 +185,15 @@ function ScrapeJobRow({
       <TableCell className="whitespace-normal">
         <JobStatus job={job} />
       </TableCell>
+      {showActions && (
+        <TableCell className="text-right">
+          <DeleteScrapeJobDialog
+            job={job}
+            runId={runId}
+            triggerVariant="row-action"
+          />
+        </TableCell>
+      )}
     </TableRow>
   )
 }
@@ -242,6 +254,7 @@ export function ScrapeJobSummaryTable({ run }: { run: ScrapeRunDetail }) {
   const primaryIdentifierLabel =
     primaryIdentifier?.label ?? "Primary Identifier"
   const statusCounts = getScrapeJobStatusCounts(run.jobs)
+  const showActions = !isActiveScrapeRun(run)
   // Pagination bounds rendering only; the accepted read contract still validates every job.
   const filteredJobs = filterScrapeJobsByStatus(run.jobs, statusFilter)
   const page = clampScrapeJobPage(requestedPage, filteredJobs.length)
@@ -353,6 +366,11 @@ export function ScrapeJobSummaryTable({ run }: { run: ScrapeRunDetail }) {
                         <TableHead className="w-[52%] md:w-[12%]">
                           Status
                         </TableHead>
+                        {showActions && (
+                          <TableHead className="w-12 text-right">
+                            Actions
+                          </TableHead>
+                        )}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -362,6 +380,7 @@ export function ScrapeJobSummaryTable({ run }: { run: ScrapeRunDetail }) {
                           job={job}
                           primaryIdentifierLabel={primaryIdentifierLabel}
                           runId={run.id}
+                          showActions={showActions}
                         />
                       ))}
                     </TableBody>

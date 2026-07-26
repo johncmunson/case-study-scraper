@@ -3,7 +3,12 @@ import "server-only"
 import { and, asc, eq, isNull, or } from "drizzle-orm"
 
 import { db } from "@/db"
-import { scrapeRunFields, scrapeRuns, scrapeRunStages } from "@/db/schema"
+import {
+  scrapeJobs,
+  scrapeRunFields,
+  scrapeRuns,
+  scrapeRunStages,
+} from "@/db/schema"
 import {
   SCRAPE_RUN_STAGES,
   isActiveScrapeRunStatus,
@@ -40,10 +45,18 @@ type OwnedScrapeRunInput = Readonly<{
   scrapeRunId: number
 }>
 
+type OwnedScrapeJobInput = OwnedScrapeRunInput &
+  Readonly<{
+    scrapeJobId: number
+  }>
+
 export type DeleteOwnedTerminalScrapeRunResult =
   | Readonly<{ outcome: "deleted" }>
   | Readonly<{ outcome: "active_conflict" }>
   | Readonly<{ outcome: "not_found" }>
+
+export type DeleteOwnedTerminalScrapeJobResult =
+  DeleteOwnedTerminalScrapeRunResult
 
 type WorkflowRunInput = Readonly<{
   scrapeRunId: number
@@ -273,6 +286,61 @@ export async function deleteOwnedTerminalScrapeRun({
 
     if (!deleted) {
       throw new Error("The locked terminal scrape run could not be deleted.")
+    }
+
+    return { outcome: "deleted" }
+  })
+}
+
+export async function deleteOwnedTerminalScrapeJob({
+  userId,
+  scrapeRunId,
+  scrapeJobId,
+}: OwnedScrapeJobInput): Promise<DeleteOwnedTerminalScrapeJobResult> {
+  return db.transaction(async (transaction) => {
+    const [run] = await transaction
+      .select({ id: scrapeRuns.id, status: scrapeRuns.status })
+      .from(scrapeRuns)
+      .where(
+        and(eq(scrapeRuns.id, scrapeRunId), eq(scrapeRuns.userId, userId)),
+      )
+      .for("update")
+
+    if (!run) {
+      return { outcome: "not_found" }
+    }
+
+    const [job] = await transaction
+      .select({ id: scrapeJobs.id })
+      .from(scrapeJobs)
+      .where(
+        and(
+          eq(scrapeJobs.scrapeRunId, scrapeRunId),
+          eq(scrapeJobs.id, scrapeJobId),
+        ),
+      )
+      .for("update")
+
+    if (!job) {
+      return { outcome: "not_found" }
+    }
+
+    if (isActiveScrapeRunStatus(run.status)) {
+      return { outcome: "active_conflict" }
+    }
+
+    const [deleted] = await transaction
+      .delete(scrapeJobs)
+      .where(
+        and(
+          eq(scrapeJobs.scrapeRunId, scrapeRunId),
+          eq(scrapeJobs.id, scrapeJobId),
+        ),
+      )
+      .returning({ id: scrapeJobs.id })
+
+    if (!deleted) {
+      throw new Error("The locked Scrape Job could not be deleted.")
     }
 
     return { outcome: "deleted" }

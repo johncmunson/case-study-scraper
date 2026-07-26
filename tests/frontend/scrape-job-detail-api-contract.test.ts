@@ -2,6 +2,7 @@ import { http, HttpResponse } from "msw"
 import { describe, expect, it } from "vitest"
 
 import {
+  deleteScrapeJob,
   fetchScrapeJobDetail,
   getScrapeJobDetailApiPath,
   scrapeJobDetailSchema,
@@ -31,6 +32,7 @@ const validScrapeJobDetail = {
   scrapeRun: {
     id: 17,
     name: "Customer stories",
+    status: "complete",
   },
   fields: [
     {
@@ -73,12 +75,25 @@ describe("Scrape Job detail frontend contract", () => {
     ).toBe(false)
   })
 
+  it.each(["pending", "in_progress", "complete", "failed", "cancelled"] as const)(
+    "accepts parent Run status %s",
+    (status) => {
+      expect(
+        scrapeJobDetailSchema.safeParse({
+          ...validScrapeJobDetail,
+          scrapeRun: { ...validScrapeJobDetail.scrapeRun, status },
+        }).success,
+      ).toBe(true)
+    },
+  )
+
   it.each([
     ["Job ID", { id: 0 }],
     ["non-integer Job ID", { id: 1.5 }],
     ["Run ID", { scrapeRun: { ...validScrapeJobDetail.scrapeRun, id: -1 } }],
     ["non-integer Run ID", { scrapeRun: { ...validScrapeJobDetail.scrapeRun, id: 1.5 } }],
     ["Run name", { scrapeRun: { ...validScrapeJobDetail.scrapeRun, name: "" } }],
+    ["Run status", { scrapeRun: { ...validScrapeJobDetail.scrapeRun, status: "paused" } }],
     ["Job URL", { url: "ftp://example.com/customer" }],
     ["status", { status: "paused" }],
     ["attempt count", { attemptCount: -1 }],
@@ -356,6 +371,55 @@ describe("Scrape Job detail API path and fetcher", () => {
       fetchScrapeJobDetail(detailUrl, 17, 31),
     ).rejects.toMatchObject({
       message: "Unable to load the scrape job.",
+      status: undefined,
+    })
+  })
+})
+
+describe("Scrape Job deletion API contract", () => {
+  it("sends DELETE and accepts only an exact 204", async () => {
+    let method = ""
+    server.use(
+      http.delete(detailUrl, ({ request }) => {
+        method = request.method
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+
+    await expect(deleteScrapeJob(detailUrl)).resolves.toBeUndefined()
+    expect(method).toBe("DELETE")
+  })
+
+  it.each([200, 202])("rejects successful status %s", async (status) => {
+    server.use(http.delete(detailUrl, () => HttpResponse.json({}, { status })))
+
+    await expect(deleteScrapeJob(detailUrl)).rejects.toMatchObject({
+      message: "The server returned an invalid response.",
+      status,
+    })
+  })
+
+  it("retains safe server errors", async () => {
+    server.use(
+      http.delete(detailUrl, () =>
+        HttpResponse.json(
+          { error: "A Scrape Job in an active scrape run cannot be deleted." },
+          { status: 409 },
+        ),
+      ),
+    )
+
+    await expect(deleteScrapeJob(detailUrl)).rejects.toMatchObject({
+      message: "A Scrape Job in an active scrape run cannot be deleted.",
+      status: 409,
+    })
+  })
+
+  it("uses a safe message for network failures", async () => {
+    server.use(http.delete(detailUrl, () => HttpResponse.error()))
+
+    await expect(deleteScrapeJob(detailUrl)).rejects.toMatchObject({
+      message: "Unable to delete the scrape job.",
       status: undefined,
     })
   })

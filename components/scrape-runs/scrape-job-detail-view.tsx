@@ -2,9 +2,11 @@
 
 import { CircleAlertIcon } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { useState } from "react"
 import useSWR, { useSWRConfig } from "swr"
 
+import { DeleteScrapeJobDialog } from "@/components/scrape-runs/delete-scrape-job-dialog"
 import { ScrapeJobDetailHeader } from "@/components/scrape-runs/scrape-job-detail-header"
 import { ScrapeJobDetailSkeleton } from "@/components/scrape-runs/scrape-job-detail-skeleton"
 import { ScrapeJobFailure } from "@/components/scrape-runs/scrape-job-failure"
@@ -28,10 +30,14 @@ import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import {
   fetchScrapeJobDetail,
+  fetchScrapeRunDetail,
   getScrapeJobDetailApiPath,
+  getScrapeRunDetailApiPath,
   ScrapeRunApiError,
   type ScrapeJobDetail,
+  type ScrapeRunDetail,
 } from "@/lib/scrape-runs/api-contracts"
+import { isActiveScrapeRunStatus } from "@/lib/scrape-runs/contracts"
 import { isActiveScrapeJob } from "@/lib/scrape-runs/presentation"
 import { cn } from "@/lib/utils"
 
@@ -163,6 +169,7 @@ export function ScrapeJobDetailView({
   jobId: string
 }) {
   const { cache, mutate: mutateCache } = useSWRConfig()
+  const router = useRouter()
   const [notFound, setNotFound] = useState(false)
   const detailPath = getScrapeJobDetailApiPath(runId, jobId)
   const expectedRunId = Number(runId)
@@ -176,7 +183,9 @@ export function ScrapeJobDetailView({
     {
       errorRetryCount: GET_ERROR_RETRY_COUNT,
       refreshInterval: (latestDetail) =>
-        latestDetail && isActiveScrapeJob(latestDetail)
+        latestDetail &&
+        (isActiveScrapeJob(latestDetail) ||
+          isActiveScrapeRunStatus(latestDetail.scrapeRun.status))
           ? ACTIVE_JOB_REFRESH_INTERVAL
           : 0,
       revalidateOnFocus: true,
@@ -235,9 +244,30 @@ export function ScrapeJobDetailView({
     )
   }
 
+  const deletionAction = !isActiveScrapeRunStatus(data.scrapeRun.status) ? (
+    <DeleteScrapeJobDialog
+      job={data}
+      runId={data.scrapeRun.id}
+      triggerVariant="detail-button"
+      onDeleted={async () => {
+        const parentPath = getScrapeRunDetailApiPath(data.scrapeRun.id)
+        try {
+          await mutateCache<ScrapeRunDetail>(
+            parentPath,
+            fetchScrapeRunDetail(parentPath),
+            { revalidate: false },
+          )
+        } catch {
+          // The optimistic parent cache remains useful when warming fails.
+        }
+        router.replace(`/app/scrape-runs/${data.scrapeRun.id}`)
+      }}
+    />
+  ) : undefined
+
   return (
     <div className="space-y-6">
-      <ScrapeJobDetailHeader job={data} />
+      <ScrapeJobDetailHeader action={deletionAction} job={data} />
       {error && isRecoverableDetailError(error) && (
         <RefreshWarning onRetry={retry} />
       )}

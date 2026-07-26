@@ -2,13 +2,14 @@ import { eq } from "drizzle-orm"
 import { beforeEach, describe, expect, it } from "vitest"
 
 import { db } from "@/db"
-import { scrapeRuns, users } from "@/db/schema"
+import { scrapeJobs, scrapeRuns, users } from "@/db/schema"
 import { newScrapeRunSchema } from "@/lib/scrape-runs/new-scrape-run"
 import {
   ActiveScrapeRunConflictError,
   attachWorkflowRunId,
   claimScrapeRun,
   createScrapeRun,
+  deleteOwnedTerminalScrapeJob,
   deleteOwnedTerminalScrapeRun,
   findOwnedScrapeRun,
   InvalidScrapeRunConfigurationError,
@@ -62,6 +63,105 @@ beforeEach(async () => {
 })
 
 describe("scrape-run repository", () => {
+  it.each(["complete", "failed", "cancelled"] as const)(
+    "deletes the final Job from an owned %s Run without changing its status",
+    async (status) => {
+      const user = await createUser()
+      const run = await createScrapeRun({
+        userId: user.id,
+        configuration: runConfiguration(),
+      })
+      await db.update(scrapeRuns).set({ status }).where(eq(scrapeRuns.id, run.id))
+      const [job] = await db
+        .insert(scrapeJobs)
+        .values({ scrapeRunId: run.id, url: `https://example.com/${status}` })
+        .returning()
+
+      await expect(
+        deleteOwnedTerminalScrapeJob({
+          userId: user.id,
+          scrapeRunId: run.id,
+          scrapeJobId: job.id,
+        }),
+      ).resolves.toEqual({ outcome: "deleted" })
+      await expect(
+        db.query.scrapeJobs.findFirst({ where: eq(scrapeJobs.id, job.id) }),
+      ).resolves.toBeUndefined()
+      await expect(
+        findOwnedScrapeRun({ userId: user.id, scrapeRunId: run.id }),
+      ).resolves.toMatchObject({ id: run.id, status })
+      await expect(
+        deleteOwnedTerminalScrapeJob({
+          userId: user.id,
+          scrapeRunId: run.id,
+          scrapeJobId: job.id,
+        }),
+      ).resolves.toEqual({ outcome: "not_found" })
+    },
+  )
+
+  it.each(["pending", "in_progress", "complete", "failed", "cancelled"] as const)(
+    "deletes a %s Job from a terminal Run and preserves sibling Jobs",
+    async (jobStatus) => {
+      const user = await createUser()
+      const run = await createScrapeRun({
+        userId: user.id,
+        configuration: runConfiguration(),
+      })
+      await db.update(scrapeRuns).set({ status: "complete" }).where(eq(scrapeRuns.id, run.id))
+      const [job, sibling] = await db
+        .insert(scrapeJobs)
+        .values([
+          {
+            scrapeRunId: run.id,
+            url: `https://example.com/delete-${jobStatus}`,
+            status: jobStatus,
+            result: jobStatus === "complete" ? { client_name: "Acme" } : null,
+          },
+          { scrapeRunId: run.id, url: `https://example.com/keep-${jobStatus}` },
+        ])
+        .returning()
+
+      await expect(
+        deleteOwnedTerminalScrapeJob({
+          userId: user.id,
+          scrapeRunId: run.id,
+          scrapeJobId: job.id,
+        }),
+      ).resolves.toEqual({ outcome: "deleted" })
+      await expect(
+        db.query.scrapeJobs.findFirst({ where: eq(scrapeJobs.id, sibling.id) }),
+      ).resolves.toMatchObject({ id: sibling.id })
+    },
+  )
+
+  it("privately rejects non-owned, missing, and wrong-parent Jobs", async () => {
+    const owner = await createUser("Owner")
+    const other = await createUser("Other")
+    const run = await createScrapeRun({ userId: owner.id, configuration: runConfiguration() })
+    const otherRun = await createScrapeRun({ userId: other.id, configuration: runConfiguration() })
+    await db.update(scrapeRuns).set({ status: "complete" })
+    const [job] = await db.insert(scrapeJobs).values({ scrapeRunId: run.id, url: "https://example.com/private" }).returning()
+
+    await expect(deleteOwnedTerminalScrapeJob({ userId: other.id, scrapeRunId: run.id, scrapeJobId: job.id })).resolves.toEqual({ outcome: "not_found" })
+    await expect(deleteOwnedTerminalScrapeJob({ userId: owner.id, scrapeRunId: otherRun.id, scrapeJobId: job.id })).resolves.toEqual({ outcome: "not_found" })
+    await expect(deleteOwnedTerminalScrapeJob({ userId: owner.id, scrapeRunId: run.id, scrapeJobId: 999_999 })).resolves.toEqual({ outcome: "not_found" })
+    await expect(db.query.scrapeJobs.findFirst({ where: eq(scrapeJobs.id, job.id) })).resolves.toMatchObject({ id: job.id })
+  })
+
+  it.each(["pending", "in_progress"] as const)(
+    "rejects deleting an existing Job from an active %s Run",
+    async (status) => {
+      const user = await createUser()
+      const run = await createScrapeRun({ userId: user.id, configuration: runConfiguration() })
+      await db.update(scrapeRuns).set({ status }).where(eq(scrapeRuns.id, run.id))
+      const [job] = await db.insert(scrapeJobs).values({ scrapeRunId: run.id, url: `https://example.com/active-${status}` }).returning()
+
+      await expect(deleteOwnedTerminalScrapeJob({ userId: user.id, scrapeRunId: run.id, scrapeJobId: job.id })).resolves.toEqual({ outcome: "active_conflict" })
+      await expect(db.query.scrapeJobs.findFirst({ where: eq(scrapeJobs.id, job.id) })).resolves.toMatchObject({ id: job.id })
+    },
+  )
+
   it.each(["complete", "failed", "cancelled"] as const)(
     "deletes an owned %s Run and reports it missing on repetition",
     async (status) => {

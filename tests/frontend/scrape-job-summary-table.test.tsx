@@ -61,6 +61,31 @@ async function selectStatus(name: RegExp) {
 }
 
 describe("Scrape Job summary table", () => {
+  it("shows per-row deletion actions only for terminal Runs", () => {
+    const terminalRun = run([job(41)], {
+      status: "complete",
+      finishedAt: "2026-04-01T10:10:00.000Z",
+    })
+    const { rerender } = render(<ScrapeJobSummaryTable run={terminalRun} />)
+
+    expect(
+      screen.getByRole("columnheader", { name: "Actions" }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", {
+        name: "Actions for https://www.example.com/customers/customer-41",
+      }),
+    ).toBeInTheDocument()
+
+    rerender(<ScrapeJobSummaryTable run={run([job(41)])} />)
+    expect(
+      screen.queryByRole("columnheader", { name: "Actions" }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole("button", { name: /Actions for/ }),
+    ).not.toBeInTheDocument()
+  })
+
   it("uses the Primary Identifier Field Label and presents lightweight job details", () => {
     const jobs = [
       job(41),

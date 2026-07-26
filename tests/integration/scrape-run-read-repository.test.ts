@@ -350,6 +350,7 @@ describe("scrape-run polling read repository", () => {
       scrapeRun: {
         id: run.id,
         name: "Customer stories",
+        status: "complete",
       },
     })
     expect(detail?.fields).toEqual([

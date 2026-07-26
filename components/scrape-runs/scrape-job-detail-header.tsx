@@ -1,5 +1,6 @@
 import { ExternalLinkIcon } from "lucide-react"
 import Link from "next/link"
+import type { ReactNode } from "react"
 
 import { Badge } from "@/components/ui/badge"
 import {
@@ -59,7 +60,13 @@ function JobTimestamp({
   )
 }
 
-export function ScrapeJobDetailHeader({ job }: { job: ScrapeJobDetail }) {
+export function ScrapeJobDetailHeader({
+  action,
+  job,
+}: {
+  action?: ReactNode
+  job: ScrapeJobDetail
+}) {
   const heading = getScrapeJobHeading(job)
   const statusLabel = getScrapeJobStatusLabel(job.status)
 
@@ -98,21 +105,23 @@ export function ScrapeJobDetailHeader({ job }: { job: ScrapeJobDetail }) {
           {heading}
         </h2>
 
-        <div
-          className="shrink-0"
-          role="status"
-          aria-label={`Scrape Job status: ${statusLabel}`}
-          aria-live="polite"
-          aria-atomic="true"
-        >
-          <Badge
-            aria-label={`Status: ${statusLabel}`}
-            className="h-7 gap-1.5 px-3 text-sm [&>svg]:size-3.5!"
-            variant={STATUS_BADGE_VARIANTS[job.status]}
+        <div className="flex shrink-0 items-center gap-2">
+          {action}
+          <div
+            role="status"
+            aria-label={`Scrape Job status: ${statusLabel}`}
+            aria-live="polite"
+            aria-atomic="true"
           >
-            {job.status === "in_progress" && <Spinner aria-hidden="true" />}
-            {statusLabel}
-          </Badge>
+            <Badge
+              aria-label={`Status: ${statusLabel}`}
+              className="h-7 gap-1.5 px-3 text-sm [&>svg]:size-3.5!"
+              variant={STATUS_BADGE_VARIANTS[job.status]}
+            >
+              {job.status === "in_progress" && <Spinner aria-hidden="true" />}
+              {statusLabel}
+            </Badge>
+          </div>
         </div>
       </div>
 
