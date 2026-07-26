@@ -88,11 +88,9 @@ export function DeleteScrapeJobDialog({
   >(jobPath, deleteScrapeJob)
 
   function revalidateReadModels() {
-    void mutate<ScrapeRunDetail>(
-      detailPath,
-      fetchScrapeRunDetail(detailPath),
-      { revalidate: false },
-    ).catch(() => undefined)
+    void mutate<ScrapeRunDetail>(detailPath, fetchScrapeRunDetail(detailPath), {
+      revalidate: false,
+    }).catch(() => undefined)
     void mutate<ScrapeRunSummaryList>(
       SCRAPE_RUNS_API_PATH,
       fetchScrapeRunSummaries(SCRAPE_RUNS_API_PATH),
@@ -207,10 +205,7 @@ export function DeleteScrapeJobDialog({
       <AlertDialog
         open={open}
         onOpenChange={(nextOpen, eventDetails) => {
-          if (
-            !nextOpen &&
-            (isMutating || submissionPendingRef.current)
-          ) {
+          if (!nextOpen && (isMutating || submissionPendingRef.current)) {
             eventDetails.cancel()
             return
           }
@@ -225,9 +220,7 @@ export function DeleteScrapeJobDialog({
             <AlertDialogHeader>
               <AlertDialogTitle>Delete Scrape Job?</AlertDialogTitle>
               <AlertDialogDescription>
-                The Scrape Job for “{job.url}”, including its lifecycle record,
-                diagnostics, and Extraction Result, will be permanently removed.
-                This action cannot be undone.
+                This action is permanent and cannot be undone.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

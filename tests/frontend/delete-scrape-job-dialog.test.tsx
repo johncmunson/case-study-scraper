@@ -22,9 +22,10 @@ const { toastErrorMock, toastSuccessMock } = vi.hoisted(() => ({
 }))
 
 vi.mock("next/link", () => ({
-  default: ({ prefetch: _prefetch, ...props }: React.ComponentProps<"a"> & { prefetch?: boolean }) => (
-    <a {...props} />
-  ),
+  default: ({
+    prefetch: _prefetch,
+    ...props
+  }: React.ComponentProps<"a"> & { prefetch?: boolean }) => <a {...props} />,
 }))
 
 vi.mock("sonner", () => ({
@@ -40,7 +41,7 @@ function job(id: number, status: ScrapeJobSummary["status"] = "complete") {
     url: `https://www.example.com/customers/customer-${id}`,
     status,
     primaryIdentifier: status === "complete" ? `Customer ${id}` : null,
-    failureCode: status === "failed" ? "scrape_failed" as const : null,
+    failureCode: status === "failed" ? ("scrape_failed" as const) : null,
     attemptCount: 1,
     createdAt: "2026-04-01T10:02:00.000Z",
     updatedAt: "2026-04-01T10:03:00.000Z",
@@ -92,16 +93,16 @@ function CachedTable({ initialRun }: { initialRun: ScrapeRunDetail }) {
 }
 
 function renderTable(initialRun: ScrapeRunDetail) {
-  const cache = new Map([
-    [SCRAPE_RUNS_API_PATH, { data: [initialRun] }],
-  ])
+  const cache = new Map([[SCRAPE_RUNS_API_PATH, { data: [initialRun] }]])
   return renderWithSwr(<CachedTable initialRun={initialRun} />, undefined, {
     provider: () => cache,
   })
 }
 
 async function openDeletion(url: string) {
-  await userEvent.click(screen.getByRole("button", { name: `Actions for ${url}` }))
+  await userEvent.click(
+    screen.getByRole("button", { name: `Actions for ${url}` }),
+  )
   await userEvent.click(await screen.findByRole("menuitem", { name: "Delete" }))
   return screen.findByRole("alertdialog")
 }
@@ -113,33 +114,48 @@ describe("Scrape Job deletion dialog", () => {
     let finishDelete: (() => void) | undefined
     let deletionCount = 0
     server.use(
-      http.delete("http://localhost/api/scrape-runs/17/scrape-jobs/41", async () => {
-        deletionCount += 1
-        await new Promise<void>((resolve) => {
-          finishDelete = resolve
-        })
-        return new HttpResponse(null, { status: 204 })
-      }),
-      http.get("http://localhost/api/scrape-runs/17", () => HttpResponse.json(updatedRun)),
-      http.get("http://localhost/api/scrape-runs", () => HttpResponse.json([updatedRun])),
+      http.delete(
+        "http://localhost/api/scrape-runs/17/scrape-jobs/41",
+        async () => {
+          deletionCount += 1
+          await new Promise<void>((resolve) => {
+            finishDelete = resolve
+          })
+          return new HttpResponse(null, { status: 204 })
+        },
+      ),
+      http.get("http://localhost/api/scrape-runs/17", () =>
+        HttpResponse.json(updatedRun),
+      ),
+      http.get("http://localhost/api/scrape-runs", () =>
+        HttpResponse.json([updatedRun]),
+      ),
     )
     renderTable(initialRun)
 
     const dialog = await openDeletion(initialRun.jobs[0].url)
     expect(dialog).toHaveTextContent(
-      "The Scrape Job for “https://www.example.com/customers/customer-41”, including its lifecycle record, diagnostics, and Extraction Result, will be permanently removed. This action cannot be undone.",
+      "This action is permanent and cannot be undone.",
     )
-    const confirm = within(dialog).getByRole("button", { name: "Delete Scrape Job" })
+    const confirm = within(dialog).getByRole("button", {
+      name: "Delete Scrape Job",
+    })
     await userEvent.click(confirm)
     await waitFor(() => expect(deletionCount).toBe(1))
     expect(confirm).toBeDisabled()
-    expect(within(dialog).getByRole("button", { name: "Keep Scrape Job" })).toBeDisabled()
+    expect(
+      within(dialog).getByRole("button", { name: "Keep Scrape Job" }),
+    ).toBeDisabled()
     await userEvent.keyboard("{Escape}")
     expect(screen.getByRole("alertdialog")).toBeInTheDocument()
 
     finishDelete?.()
-    expect(await screen.findByText("No scrape jobs created")).toBeInTheDocument()
-    expect(screen.queryByRole("table", { name: "Scrape Jobs" })).not.toBeInTheDocument()
+    expect(
+      await screen.findByText("No scrape jobs created"),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole("table", { name: "Scrape Jobs" }),
+    ).not.toBeInTheDocument()
     expect(deletionCount).toBe(1)
     await waitFor(() =>
       expect(screen.getByLabelText("Cached Run summary")).toHaveTextContent(
@@ -154,50 +170,80 @@ describe("Scrape Job deletion dialog", () => {
     const initialRun = run(jobs)
     const updatedRun = run(jobs.slice(0, 25))
     server.use(
-      http.delete("http://localhost/api/scrape-runs/17/scrape-jobs/26", () => new HttpResponse(null, { status: 204 })),
-      http.get("http://localhost/api/scrape-runs/17", () => HttpResponse.json(updatedRun)),
-      http.get("http://localhost/api/scrape-runs", () => HttpResponse.json([updatedRun])),
+      http.delete(
+        "http://localhost/api/scrape-runs/17/scrape-jobs/26",
+        () => new HttpResponse(null, { status: 204 }),
+      ),
+      http.get("http://localhost/api/scrape-runs/17", () =>
+        HttpResponse.json(updatedRun),
+      ),
+      http.get("http://localhost/api/scrape-runs", () =>
+        HttpResponse.json([updatedRun]),
+      ),
     )
     renderTable(initialRun)
 
     await userEvent.click(screen.getByRole("button", { name: "Next page" }))
     const dialog = await openDeletion(jobs[25].url)
-    await userEvent.click(within(dialog).getByRole("button", { name: "Delete Scrape Job" }))
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Delete Scrape Job" }),
+    )
 
     expect(await screen.findByText("1–25 of 25 jobs")).toBeInTheDocument()
-    expect(screen.queryByRole("link", { name: "Customer 26" })).not.toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: "Next page" })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole("link", { name: "Customer 26" }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole("button", { name: "Next page" }),
+    ).not.toBeInTheDocument()
     await waitFor(() =>
       expect(screen.getByLabelText("Cached Run summary")).toHaveTextContent(
         "complete:25:25:0",
       ),
     )
-    await userEvent.click(screen.getByRole("combobox", { name: "Filter by status" }))
+    await userEvent.click(
+      screen.getByRole("combobox", { name: "Filter by status" }),
+    )
     expect(screen.getByRole("option", { name: "All (25)" })).toBeInTheDocument()
-    expect(screen.getByRole("option", { name: "Complete (25)" })).toBeInTheDocument()
+    expect(
+      screen.getByRole("option", { name: "Complete (25)" }),
+    ).toBeInTheDocument()
   })
 
   it("retains the row and revalidates after deletion fails", async () => {
     const initialRun = run([job(41)])
     let parentReads = 0
     server.use(
-      http.delete("http://localhost/api/scrape-runs/17/scrape-jobs/41", () => HttpResponse.json({ error: "Unable to delete this Job." }, { status: 503 })),
+      http.delete("http://localhost/api/scrape-runs/17/scrape-jobs/41", () =>
+        HttpResponse.json(
+          { error: "Unable to delete this Job." },
+          { status: 503 },
+        ),
+      ),
       http.get("http://localhost/api/scrape-runs/17", () => {
         parentReads += 1
         return HttpResponse.json(initialRun)
       }),
-      http.get("http://localhost/api/scrape-runs", () => HttpResponse.json([initialRun])),
+      http.get("http://localhost/api/scrape-runs", () =>
+        HttpResponse.json([initialRun]),
+      ),
     )
     renderTable(initialRun)
 
     const dialog = await openDeletion(initialRun.jobs[0].url)
-    await userEvent.click(within(dialog).getByRole("button", { name: "Delete Scrape Job" }))
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Delete Scrape Job" }),
+    )
 
-    await waitFor(() => expect(toastErrorMock).toHaveBeenCalledWith(
-      "Error: Unable to delete this Job.",
-      { position: "bottom-center" },
-    ))
-    expect(screen.getByRole("link", { name: "Customer 41" })).toBeInTheDocument()
+    await waitFor(() =>
+      expect(toastErrorMock).toHaveBeenCalledWith(
+        "Error: Unable to delete this Job.",
+        { position: "bottom-center" },
+      ),
+    )
+    expect(
+      screen.getByRole("link", { name: "Customer 41" }),
+    ).toBeInTheDocument()
     await waitFor(() => expect(parentReads).toBeGreaterThan(0))
   })
 })
