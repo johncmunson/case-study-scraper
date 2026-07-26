@@ -357,18 +357,16 @@ export function ScrapeJobSummaryTable({ run }: { run: ScrapeRunDetail }) {
                   <Table aria-label="Scrape Jobs" className="table-fixed">
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[48%] wrap-anywhere whitespace-normal md:w-[32%]">
+                        <TableHead className="wrap-anywhere whitespace-normal">
                           {primaryIdentifierLabel}
                         </TableHead>
-                        <TableHead className="hidden w-[52%] md:table-cell">
+                        <TableHead className="hidden md:table-cell md:w-1/2">
                           Page URL
                         </TableHead>
-                        <TableHead className="w-[52%] md:w-[12%]">
-                          Status
-                        </TableHead>
+                        <TableHead className="w-28">Status</TableHead>
                         {showActions && (
                           <TableHead className="w-12 text-right">
-                            Actions
+                            <span className="sr-only">Actions</span>
                           </TableHead>
                         )}
                       </TableRow>

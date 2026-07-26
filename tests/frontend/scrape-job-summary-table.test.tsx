@@ -68,9 +68,9 @@ describe("Scrape Job summary table", () => {
     })
     const { rerender } = render(<ScrapeJobSummaryTable run={terminalRun} />)
 
-    expect(
-      screen.getByRole("columnheader", { name: "Actions" }),
-    ).toBeInTheDocument()
+    const actionsHeader = screen.getByRole("columnheader", { name: "Actions" })
+    expect(actionsHeader).toBeInTheDocument()
+    expect(within(actionsHeader).getByText("Actions")).toHaveClass("sr-only")
     expect(
       screen.getByRole("button", {
         name: "Actions for https://www.example.com/customers/customer-41",
