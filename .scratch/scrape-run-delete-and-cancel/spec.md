@@ -8,14 +8,14 @@ Add a top-right actions menu to every card on the Scrape Runs page while preserv
 
 Each menu contains exactly one destructive action, selected from the Run's persisted lifecycle status:
 
-| Run state | Menu action |
-| --- | --- |
-| `pending` | Cancel |
-| `in_progress` | Cancel |
-| `in_progress` with a Cancellation Request (displayed as “Cancelling”) | Cancel |
-| `complete` | Delete |
-| `failed` | Delete |
-| `cancelled` | Delete |
+| Run state                                                             | Menu action |
+| --------------------------------------------------------------------- | ----------- |
+| `pending`                                                             | Cancel      |
+| `in_progress`                                                         | Cancel      |
+| `in_progress` with a Cancellation Request (displayed as “Cancelling”) | Cancel      |
+| `complete`                                                            | Delete      |
+| `failed`                                                              | Delete      |
+| `cancelled`                                                           | Delete      |
 
 “Cancelling” remains an active presentation state, not a terminal status. Repeated cancellation is safe because the existing cancellation endpoint is idempotent and resumes incomplete cancellation cleanup.
 
@@ -54,12 +54,12 @@ DELETE /api/scrape-runs/:runId
 
 Responses:
 
-| Condition | Response |
-| --- | --- |
-| Unauthenticated | `401` with the existing unauthorized JSON body |
+| Condition                          | Response                                            |
+| ---------------------------------- | --------------------------------------------------- |
+| Unauthenticated                    | `401` with the existing unauthorized JSON body      |
 | Invalid, missing, or non-owned Run | `404` with the existing private not-found JSON body |
-| Owned Run is still active | `409` with a safe JSON error |
-| Terminal Run deleted | `204 No Content` with an empty body |
+| Owned Run is still active          | `409` with a safe JSON error                        |
+| Terminal Run deleted               | `204 No Content` with an empty body                 |
 
 A second deletion request returns `404`; deletion is not represented as an idempotent success after the resource has ceased to exist.
 
@@ -280,15 +280,15 @@ The card menu deliberately uses the simpler agreed Cancel wording even though th
 
 ### Test seams
 
-| Seam | Purpose | Test level |
-| --- | --- | --- |
-| `deleteOwnedTerminalScrapeRun` outcome union | Test ownership and status policy independently from HTTP mapping | Integration |
-| `DELETE` Route Handler with mocked session/repository | Test authentication, private errors, and exact HTTP responses without a database | Unit |
-| Database foreign-key cascades | Prove parent deletion removes all app-owned child data | Integration |
-| `deleteScrapeRun` fetcher | Test method, exact `204` handling, error normalization, and no JSON parsing | Frontend contract |
-| `ScrapeRunCardActions` with MSW and isolated SWR cache | Test menu/dialog behavior and real mutation/cache integration | Frontend |
-| `ScrapeRunListItem` | Test sibling link/menu structure and timestamp/badge placement | Frontend |
-| Existing `isActiveScrapeRun` and terminal status helpers | Keep the action matrix tied to canonical lifecycle classification | Unit/frontend |
+| Seam                                                     | Purpose                                                                          | Test level        |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------- | ----------------- |
+| `deleteOwnedTerminalScrapeRun` outcome union             | Test ownership and status policy independently from HTTP mapping                 | Integration       |
+| `DELETE` Route Handler with mocked session/repository    | Test authentication, private errors, and exact HTTP responses without a database | Unit              |
+| Database foreign-key cascades                            | Prove parent deletion removes all app-owned child data                           | Integration       |
+| `deleteScrapeRun` fetcher                                | Test method, exact `204` handling, error normalization, and no JSON parsing      | Frontend contract |
+| `ScrapeRunCardActions` with MSW and isolated SWR cache   | Test menu/dialog behavior and real mutation/cache integration                    | Frontend          |
+| `ScrapeRunListItem`                                      | Test sibling link/menu structure and timestamp/badge placement                   | Frontend          |
+| Existing `isActiveScrapeRun` and terminal status helpers | Keep the action matrix tied to canonical lifecycle classification                | Unit/frontend     |
 
 Use [`tests/frontend/render.tsx`](./tests/frontend/render.tsx) for an isolated SWR cache and the existing MSW server for network behavior. Use the shared Scrape Run fixtures rather than introducing loosely typed objects.
 
