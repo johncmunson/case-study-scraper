@@ -114,6 +114,7 @@ describe("Scrape Job summary table", () => {
       "href",
       "/app/scrape-runs/17/scrape-jobs/41",
     )
+    expect(urlLinks[0]).toHaveTextContent(/^\/customers\/customer-41$/)
     expect(urlLinks[0]).toHaveAttribute("data-prefetch", "false")
     expect(urlLinks[0]).toHaveClass("md:hidden")
     expect(

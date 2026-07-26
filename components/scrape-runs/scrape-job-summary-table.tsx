@@ -99,6 +99,8 @@ function JobUrlLink({
   job: ScrapeJobSummary
   runId: number
 }) {
+  const pagePath = new URL(job.url).pathname
+
   return (
     <Tooltip>
       <TooltipTrigger
@@ -111,7 +113,7 @@ function JobUrlLink({
           />
         }
       >
-        {job.url}
+        {pagePath}
       </TooltipTrigger>
       <TooltipContent className="max-w-sm break-all">{job.url}</TooltipContent>
     </Tooltip>
