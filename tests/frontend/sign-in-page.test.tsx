@@ -31,24 +31,31 @@ describe("sign-in page", () => {
     ).toBeInTheDocument()
     expect(screen.getByText("Research-ready extraction")).toBeInTheDocument()
     expect(
-      screen.getByText(/Turn matching case studies and project pages into sourced/),
+      screen.getByText(
+        /Turn matching case studies and project pages into sourced/,
+      ),
     ).toBeInTheDocument()
     expect(
       screen.getByRole("button", { name: "Continue with Google" }),
     ).toBeInTheDocument()
-    expect(screen.getByRole("link", { name: "Case Study Scraper" })).toHaveAttribute(
-      "href",
-      "/",
-    )
+    expect(
+      screen.getByRole("link", { name: "Case Study Scraper" }),
+    ).toHaveAttribute("href", "/")
     expect(screen.getByRole("link", { name: "Back to home" })).toHaveAttribute(
       "href",
       "/",
     )
     const workflow = screen.getByRole("list", { name: "Three-step workflow" })
     expect(within(workflow).getAllByRole("listitem")).toHaveLength(3)
-    expect(within(workflow).getByText("Find matching pages")).toBeInTheDocument()
-    expect(within(workflow).getByText("Extract chosen fields")).toBeInTheDocument()
-    expect(within(workflow).getByText("Download CSV or JSON")).toBeInTheDocument()
+    expect(
+      within(workflow).getByText("Find matching pages"),
+    ).toBeInTheDocument()
+    expect(
+      within(workflow).getByText("Extract chosen fields"),
+    ).toBeInTheDocument()
+    expect(
+      within(workflow).getByText("Download CSV or JSON"),
+    ).toBeInTheDocument()
   })
 
   it("redirects an existing session to the authenticated app", async () => {

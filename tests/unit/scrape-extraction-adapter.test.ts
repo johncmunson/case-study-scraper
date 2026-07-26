@@ -77,7 +77,9 @@ describe("Firecrawl Scrape extraction adapter", () => {
 
     expect(requestBody).toMatchObject({
       url: pageUrl,
-      formats: [{ type: "json", schema: buildFirecrawlExtractionSchema(fields) }],
+      formats: [
+        { type: "json", schema: buildFirecrawlExtractionSchema(fields) },
+      ],
     })
     expect(requestBody).not.toHaveProperty("maxAge")
   })
@@ -90,9 +92,7 @@ describe("Firecrawl Scrape extraction adapter", () => {
       { client: "Acme", sector: "   \n " },
     ]
 
-    server.use(
-      scrapeHandler(() => successfulScrape(outputs.shift())),
-    )
+    server.use(scrapeHandler(() => successfulScrape(outputs.shift())))
 
     for (let index = 0; index < 4; index += 1) {
       await expect(

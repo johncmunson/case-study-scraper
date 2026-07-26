@@ -13,9 +13,7 @@ function notFoundResponse() {
 
 export async function GET(
   _request: Request,
-  {
-    params,
-  }: { params: Promise<{ runId: string; jobId: string }> },
+  { params }: { params: Promise<{ runId: string; jobId: string }> },
 ) {
   const session = await getCurrentSession()
 
@@ -42,9 +40,7 @@ export async function GET(
 
 export async function DELETE(
   _request: Request,
-  {
-    params,
-  }: { params: Promise<{ runId: string; jobId: string }> },
+  { params }: { params: Promise<{ runId: string; jobId: string }> },
 ) {
   const session = await getCurrentSession()
 

@@ -89,17 +89,13 @@ Run and job statuses are:
 
 ```ts
 type ScrapeRunStatus =
-  | "pending"
-  | "in_progress"
-  | "complete"
-  | "failed"
-  | "cancelled"
+  "pending" | "in_progress" | "complete" | "failed" | "cancelled"
 ```
 
 Run Stage statuses add `"skipped"`. Run Stages are always ordered:
 
 ```ts
-["mapping", "filtering", "scraping"]
+;["mapping", "filtering", "scraping"]
 ```
 
 Relevant guarantees:
@@ -392,7 +388,7 @@ Prefer existing shadcn/ui components from `components/ui`, including Breadcrumb,
 Use the exact owner-scoped endpoint as the cache key:
 
 ```ts
-`/api/scrape-runs/${runId}`
+;`/api/scrape-runs/${runId}`
 ```
 
 The fetcher must:
@@ -445,14 +441,14 @@ Do not show the numeric Run ID.
 
 ### 10.2 Visible status labels
 
-| Condition | Label |
-|---|---|
-| `pending` | Pending |
-| `in_progress` | In progress |
-| Active with `cancellationRequestedAt` | Cancelling |
-| `complete` | Complete |
-| `failed` | Failed |
-| `cancelled` | Cancelled |
+| Condition                             | Label       |
+| ------------------------------------- | ----------- |
+| `pending`                             | Pending     |
+| `in_progress`                         | In progress |
+| Active with `cancellationRequestedAt` | Cancelling  |
+| `complete`                            | Complete    |
+| `failed`                              | Failed      |
+| `cancelled`                           | Cancelled   |
 
 A Cancellation Request overrides the visible label only while the Run is active. Include text in every status badge; color or motion must never be the sole signal. Decorative spinners are hidden from assistive technology.
 
@@ -479,7 +475,7 @@ Use the same lifecycle semantics as the Run Summary list:
 Progress is:
 
 ```ts
-(finishedCount / jobCounts.total) * 100
+;(finishedCount / jobCounts.total) * 100
 ```
 
 Mixed job outcomes remain explicit even when the Run status is **Complete**.
@@ -550,7 +546,7 @@ On narrow layouts, combine identifier and URL information in the primary cell an
 Provide semantic Next.js Links to:
 
 ```ts
-`/app/scrape-runs/${runId}/scrape-jobs/${job.id}`
+;`/app/scrape-runs/${runId}/scrape-jobs/${job.id}`
 ```
 
 Both the Primary Identifier value when present and the Page URL may provide the detail link. Do not implement navigation through an `onClick`-only table row. Give the row/link clear hover and keyboard-focus treatment.
@@ -690,7 +686,7 @@ Do not mutate lifecycle counts, stage states, or lifecycle timestamps by hand fr
 Change each existing Run Summary item on `/app/scrape-runs` from informational content into a semantic Next.js Link to:
 
 ```ts
-`/app/scrape-runs/${run.id}`
+;`/app/scrape-runs/${run.id}`
 ```
 
 Preserve all existing list content, polling, creation, active-run disabling, responsive layout, and status semantics. Use the existing shadcn Item render capability or an equivalent semantic anchor composition rather than an `onClick` handler on a generic container.

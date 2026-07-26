@@ -47,14 +47,20 @@ export function ScrapeRunConfiguration({ run }: { run: ScrapeRunDetail }) {
         <CollapsibleContent className="pt-3">
           <Card>
             <CardContent className="space-y-6">
-              <section className="space-y-2" aria-labelledby="target-site-heading">
+              <section
+                className="space-y-2"
+                aria-labelledby="target-site-heading"
+              >
                 <h4 id="target-site-heading" className="font-medium">
                   Target Site
                 </h4>
                 <ExternalUrlLink url={run.targetUrl} />
               </section>
 
-              <section className="space-y-2" aria-labelledby="example-pages-heading">
+              <section
+                className="space-y-2"
+                aria-labelledby="example-pages-heading"
+              >
                 <h4 id="example-pages-heading" className="font-medium">
                   Example Pages
                 </h4>
@@ -81,7 +87,9 @@ export function ScrapeRunConfiguration({ run }: { run: ScrapeRunDetail }) {
                         <h5 className="wrap-break-word font-medium">
                           {field.label}
                         </h5>
-                        <Badge variant={field.required ? "secondary" : "outline"}>
+                        <Badge
+                          variant={field.required ? "secondary" : "outline"}
+                        >
                           {field.required ? "Required" : "Optional"}
                         </Badge>
                         {field.primaryIdentifier && (

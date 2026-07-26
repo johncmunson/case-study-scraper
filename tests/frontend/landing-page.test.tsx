@@ -32,11 +32,13 @@ describe("landing page", () => {
       ),
     ).toBeInTheDocument()
 
-    const sectionLinks = screen.getAllByRole("link").filter((link) =>
-      ["#how-it-works", "#output", "#use-cases"].includes(
-        link.getAttribute("href") ?? "",
-      ),
-    )
+    const sectionLinks = screen
+      .getAllByRole("link")
+      .filter((link) =>
+        ["#how-it-works", "#output", "#use-cases"].includes(
+          link.getAttribute("href") ?? "",
+        ),
+      )
     expect(sectionLinks.length).toBeGreaterThanOrEqual(4)
     for (const link of sectionLinks) {
       expect(container.querySelector(link.getAttribute("href")!)).not.toBeNull()
@@ -86,7 +88,9 @@ describe("landing page", () => {
     const preview = screen.getByRole("figure", {
       name: /Example pages becoming a structured extraction dataset/i,
     })
-    expect(within(preview).getByText("northstar-studio.example")).toBeInTheDocument()
+    expect(
+      within(preview).getByText("northstar-studio.example"),
+    ).toBeInTheDocument()
     for (const field of ["Client", "Industry", "Services", "Outcome"]) {
       expect(within(preview).getAllByText(field).length).toBeGreaterThan(0)
     }
@@ -110,7 +114,9 @@ describe("landing page", () => {
         name: "Turn case studies into structured datasets.",
       }),
     ).toBeInTheDocument()
-    expect(screen.queryByRole("link", { name: "Sign in" })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole("link", { name: "Sign in" }),
+    ).not.toBeInTheDocument()
     expect(
       screen.queryByRole("link", { name: "Get started" }),
     ).not.toBeInTheDocument()

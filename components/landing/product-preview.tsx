@@ -78,7 +78,10 @@ export function ProductPreview() {
               <p className="text-xs font-medium text-muted-foreground">
                 Extraction Fields
               </p>
-              <ul className="mt-2 flex flex-wrap gap-2" aria-label="Extraction Fields">
+              <ul
+                className="mt-2 flex flex-wrap gap-2"
+                aria-label="Extraction Fields"
+              >
                 {fields.map((field) => (
                   <li
                     key={field}
@@ -183,8 +186,8 @@ export function ProductPreview() {
         </Card>
       </div>
       <figcaption className="sr-only">
-        A fictional Northstar Studio run configuration with a Target Site,
-        three Example Pages, and four Extraction Fields becomes source-linked
+        A fictional Northstar Studio run configuration with a Target Site, three
+        Example Pages, and four Extraction Fields becomes source-linked
         Extraction Results, with two example results shown, available as CSV or
         JSON.
       </figcaption>

@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react"
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { http, HttpResponse, delay } from "msw"
 import type { ComponentProps } from "react"
@@ -17,13 +23,15 @@ import { validScrapeRunDetail } from "@/tests/frontend/scrape-run-fixtures"
 import { server } from "@/tests/mocks/server"
 
 vi.mock("next/link", () => ({
-  default: ({ prefetch, ...props }: ComponentProps<"a"> & { prefetch?: boolean }) => (
+  default: ({
+    prefetch,
+    ...props
+  }: ComponentProps<"a"> & { prefetch?: boolean }) => (
     <a data-prefetch={String(prefetch)} {...props} />
   ),
 }))
 
-const datasetApiUrl =
-  "http://localhost/api/scrape-runs/17/extraction-dataset"
+const datasetApiUrl = "http://localhost/api/scrape-runs/17/extraction-dataset"
 
 function job(id: number): ScrapeJobSummary {
   return {
@@ -126,7 +134,9 @@ function renderTable(detail: ScrapeRunDetail) {
 async function chooseFormat(format: "CSV" | "JSON") {
   const user = userEvent.setup()
   await user.click(screen.getByRole("button", { name: "Download dataset" }))
-  await user.click(await screen.findByRole("menuitem", { name: `Download ${format}` }))
+  await user.click(
+    await screen.findByRole("menuitem", { name: `Download ${format}` }),
+  )
 }
 
 afterEach(() => {
@@ -152,17 +162,20 @@ describe("Extraction Dataset download", () => {
       }),
       explanation: "No successful results to download.",
     },
-  ])("keeps the control discoverable for $state", async ({ detail, explanation }) => {
-    renderTable(detail)
+  ])(
+    "keeps the control discoverable for $state",
+    async ({ detail, explanation }) => {
+      renderTable(detail)
 
-    const button = screen.getByRole("button", { name: "Download dataset" })
-    expect(button).toBeDisabled()
+      const button = screen.getByRole("button", { name: "Download dataset" })
+      expect(button).toBeDisabled()
 
-    const tooltipTrigger = button.parentElement
-    expect(tooltipTrigger).toHaveAttribute("tabindex", "0")
-    tooltipTrigger?.focus()
-    expect(await screen.findByRole("tooltip")).toHaveTextContent(explanation)
-  })
+      const tooltipTrigger = button.parentElement
+      expect(tooltipTrigger).toHaveAttribute("tabindex", "0")
+      tooltipTrigger?.focus()
+      expect(await screen.findByRole("tooltip")).toHaveTextContent(explanation)
+    },
+  )
 
   it.each(["complete", "failed", "cancelled"] as const)(
     "enables the control for an eligible %s Run",
@@ -188,8 +201,12 @@ describe("Extraction Dataset download", () => {
     await userEvent.keyboard("{Enter}")
 
     const menu = await screen.findByRole("menu")
-    expect(within(menu).getByRole("menuitem", { name: "Download CSV" })).toBeInTheDocument()
-    expect(within(menu).getByRole("menuitem", { name: "Download JSON" })).toBeInTheDocument()
+    expect(
+      within(menu).getByRole("menuitem", { name: "Download CSV" }),
+    ).toBeInTheDocument()
+    expect(
+      within(menu).getByRole("menuitem", { name: "Download JSON" }),
+    ).toBeInTheDocument()
     expect(menu).toHaveTextContent(
       "Includes all 3 successful results. Failed and cancelled jobs are excluded.",
     )
@@ -204,15 +221,12 @@ describe("Extraction Dataset download", () => {
       let requestedUrl: URL | undefined
       const browserDownload = installBrowserDownloadSpies()
       server.use(
-        http.get(
-          datasetApiUrl,
-          ({ request }) => {
-            requestedUrl = new URL(request.url)
-            return new HttpResponse(`dataset-${format}`, {
-              headers: { "Content-Type": contentType },
-            })
-          },
-        ),
+        http.get(datasetApiUrl, ({ request }) => {
+          requestedUrl = new URL(request.url)
+          return new HttpResponse(`dataset-${format}`, {
+            headers: { "Content-Type": contentType },
+          })
+        }),
       )
 
       const { container } = renderTable(run())
@@ -221,7 +235,9 @@ describe("Extraction Dataset download", () => {
       await waitFor(() => expect(browserDownload.click).toHaveBeenCalledOnce())
       expect(requestedUrl?.searchParams.get("format")).toBe(format)
       expect([...requestedUrl!.searchParams.keys()]).toEqual(["format"])
-      expect(browserDownload.createObjectURL).toHaveBeenCalledWith(expect.any(Blob))
+      expect(browserDownload.createObjectURL).toHaveBeenCalledWith(
+        expect.any(Blob),
+      )
       expect(browserDownload.getClickedAnchor()).toMatchObject({
         href: "blob:extraction-dataset",
         download: filename,
@@ -245,14 +261,11 @@ describe("Extraction Dataset download", () => {
     let requestCount = 0
     installBrowserDownloadSpies()
     server.use(
-      http.get(
-        datasetApiUrl,
-        async () => {
-          requestCount += 1
-          await requestGate
-          return new HttpResponse("dataset")
-        },
-      ),
+      http.get(datasetApiUrl, async () => {
+        requestCount += 1
+        await requestGate
+        return new HttpResponse("dataset")
+      }),
     )
 
     renderTable(run())
@@ -283,7 +296,10 @@ describe("Extraction Dataset download", () => {
     {
       kind: "HTTP",
       response: () =>
-        HttpResponse.json({ error: "Dataset is not available." }, { status: 409 }),
+        HttpResponse.json(
+          { error: "Dataset is not available." },
+          { status: 409 },
+        ),
       warning: "Error: Dataset is not available.",
     },
     {
@@ -302,13 +318,10 @@ describe("Extraction Dataset download", () => {
       let requestCount = 0
       const browserDownload = installBrowserDownloadSpies()
       server.use(
-        http.get(
-          datasetApiUrl,
-          () => {
-            requestCount += 1
-            return response()
-          },
-        ),
+        http.get(datasetApiUrl, () => {
+          requestCount += 1
+          return response()
+        }),
       )
 
       renderTable(run())
@@ -332,12 +345,7 @@ describe("Extraction Dataset download", () => {
     vi.spyOn(Response.prototype, "blob").mockRejectedValueOnce(
       new Error("private Blob failure"),
     )
-    server.use(
-      http.get(
-        datasetApiUrl,
-        () => new HttpResponse("dataset"),
-      ),
-    )
+    server.use(http.get(datasetApiUrl, () => new HttpResponse("dataset")))
 
     renderTable(run())
     await chooseFormat("CSV")
@@ -361,12 +369,7 @@ describe("Extraction Dataset download", () => {
     browserDownload.createObjectURL.mockImplementationOnce(() => {
       throw new Error("private object URL failure")
     })
-    server.use(
-      http.get(
-        datasetApiUrl,
-        () => new HttpResponse("dataset"),
-      ),
-    )
+    server.use(http.get(datasetApiUrl, () => new HttpResponse("dataset")))
 
     renderTable(run())
     await chooseFormat("JSON")
@@ -391,12 +394,7 @@ describe("Extraction Dataset download", () => {
     browserDownload.click.mockImplementationOnce(() => {
       throw new Error("private browser handoff failure")
     })
-    server.use(
-      http.get(
-        datasetApiUrl,
-        () => new HttpResponse("dataset"),
-      ),
-    )
+    server.use(http.get(datasetApiUrl, () => new HttpResponse("dataset")))
 
     renderTable(run())
     await chooseFormat("CSV")
@@ -423,19 +421,18 @@ describe("Extraction Dataset download", () => {
     installBrowserDownloadSpies()
     let requestedUrl: URL | undefined
     server.use(
-      http.get(
-        datasetApiUrl,
-        ({ request }) => {
-          requestedUrl = new URL(request.url)
-          return new HttpResponse("dataset")
-        },
-      ),
+      http.get(datasetApiUrl, ({ request }) => {
+        requestedUrl = new URL(request.url)
+        return new HttpResponse("dataset")
+      }),
     )
 
     renderTable(run({ jobs }))
     const user = userEvent.setup()
     await user.click(screen.getByRole("combobox", { name: "Filter by status" }))
-    await user.click(await screen.findByRole("option", { name: "Complete (31)" }))
+    await user.click(
+      await screen.findByRole("option", { name: "Complete (31)" }),
+    )
     await user.click(screen.getByRole("button", { name: "Next page" }))
     expect(screen.getByText("26–31 of 31 jobs")).toBeInTheDocument()
 
@@ -444,9 +441,9 @@ describe("Extraction Dataset download", () => {
     await waitFor(() => expect(requestedUrl).toBeDefined())
     expect(requestedUrl?.search).toBe("?format=csv")
     expect(screen.getByText("26–31 of 31 jobs")).toBeInTheDocument()
-    expect(screen.getByRole("combobox", { name: "Filter by status" })).toHaveTextContent(
-      "Complete (31)",
-    )
+    expect(
+      screen.getByRole("combobox", { name: "Filter by status" }),
+    ).toHaveTextContent("Complete (31)")
   })
 
   it("does not revalidate the Run detail or show a success toast", async () => {
@@ -457,10 +454,7 @@ describe("Extraction Dataset download", () => {
         detailRequestCount += 1
         return HttpResponse.json(run())
       }),
-      http.get(
-        datasetApiUrl,
-        () => new HttpResponse("dataset"),
-      ),
+      http.get(datasetApiUrl, () => new HttpResponse("dataset")),
     )
 
     const { container } = renderWithSwr(

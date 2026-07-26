@@ -173,9 +173,7 @@ function ExtractionResultField({
           <ReactMarkdown
             urlTransform={(url) => resolveMarkdownUrl(url, canonicalPageUrl)}
             components={{
-              a: ({ node: _node, ...props }) => (
-                <MarkdownLink {...props} />
-              ),
+              a: ({ node: _node, ...props }) => <MarkdownLink {...props} />,
               img: ({ node: _node, alt, src, title }) => {
                 const source = typeof src === "string" ? src : undefined
 

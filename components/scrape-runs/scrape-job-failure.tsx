@@ -1,10 +1,6 @@
 import { CircleAlertIcon } from "lucide-react"
 
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@/components/ui/alert"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import type { ScrapeJobDetail } from "@/lib/scrape-runs/api-contracts"
 
 const GENERIC_FAILURE_MESSAGE =
@@ -32,9 +28,7 @@ export function ScrapeJobFailure({ job }: { job: ScrapeJobDetail }) {
         <h3>Scrape Job failed</h3>
       </AlertTitle>
       <AlertDescription className="space-y-3">
-        <p className="wrap-anywhere">
-          {failureMessage}
-        </p>
+        <p className="wrap-anywhere">{failureMessage}</p>
         {job.failureCode && (
           <p className="wrap-anywhere font-mono text-xs">
             Failure code: <code>{job.failureCode}</code>

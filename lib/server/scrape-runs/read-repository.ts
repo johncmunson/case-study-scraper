@@ -91,8 +91,9 @@ export async function findOwnedScrapeRunDetail({
         id: scrapeJobs.id,
         url: scrapeJobs.url,
         status: scrapeJobs.status,
-        primaryIdentifier:
-          sql<string | null>`${scrapeJobs.result} ->> ${primaryField.key}`,
+        primaryIdentifier: sql<
+          string | null
+        >`${scrapeJobs.result} ->> ${primaryField.key}`,
         failureCode: scrapeJobs.failureCode,
         attemptCount: scrapeJobs.attemptCount,
         createdAt: scrapeJobs.createdAt,
@@ -201,10 +202,7 @@ export async function findOwnedScrapeJobDetail({
     })
     .from(scrapeJobs)
     .innerJoin(scrapeRuns, eq(scrapeRuns.id, scrapeJobs.scrapeRunId))
-    .innerJoin(
-      scrapeRunFields,
-      eq(scrapeRunFields.scrapeRunId, scrapeRuns.id),
-    )
+    .innerJoin(scrapeRunFields, eq(scrapeRunFields.scrapeRunId, scrapeRuns.id))
     .where(
       and(
         eq(scrapeRuns.userId, userId),

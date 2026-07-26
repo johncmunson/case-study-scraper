@@ -15,8 +15,7 @@ This is a client-side presentation change to `components/scrape-runs/scrape-job-
 A non-null extracted value is a **Markdown Candidate** exactly when:
 
 ```ts
-(value.length > 250 && /[\r\n]/.test(value)) ||
-field.key.includes("markdown")
+;(value.length > 250 && /[\r\n]/.test(value)) || field.key.includes("markdown")
 ```
 
 The test is per extracted value. Exactly 250 characters does not satisfy the length condition. A Field Key containing `markdown` qualifies any non-null value regardless of length or newlines. Missing Values remain **Not found**.

@@ -21,9 +21,7 @@ import { server } from "@/tests/mocks/server"
 const listApiUrl = "http://localhost/api/scrape-runs"
 const detailApiUrl = `${listApiUrl}/17`
 
-function detail(
-  replacement: Partial<ScrapeRunDetail> = {},
-): ScrapeRunDetail {
+function detail(replacement: Partial<ScrapeRunDetail> = {}): ScrapeRunDetail {
   return {
     ...validScrapeRunDetail,
     ...replacement,
@@ -188,7 +186,9 @@ describe("Scrape Run cancellation", () => {
     await userEvent.click(retryAction)
 
     await waitFor(() => {
-      expect(getRunHeader().getByLabelText("Status: Cancelled")).toBeInTheDocument()
+      expect(
+        getRunHeader().getByLabelText("Status: Cancelled"),
+      ).toBeInTheDocument()
     })
     expect(postCount).toBe(1)
     expect(detailGetCount).toBe(2)
@@ -238,8 +238,7 @@ describe("Scrape Run cancellation", () => {
       stages: validScrapeRunDetail.stages.map((stage, index) => ({
         ...stage,
         status: index === 2 ? "cancelled" : "complete",
-        finishedAt:
-          stage.finishedAt ?? "2026-04-01T10:10:00.000Z",
+        finishedAt: stage.finishedAt ?? "2026-04-01T10:10:00.000Z",
       })),
     })
     const cancelledSummary = summary({
@@ -264,10 +263,7 @@ describe("Scrape Run cancellation", () => {
         ])
       }),
       http.post(`${detailApiUrl}/cancel`, () =>
-        HttpResponse.json(
-          { id: 17, status: "cancelled" },
-          { status: 202 },
-        ),
+        HttpResponse.json({ id: 17, status: "cancelled" }, { status: 202 }),
       ),
     )
 
@@ -278,9 +274,7 @@ describe("Scrape Run cancellation", () => {
     )
 
     const user = userEvent.setup()
-    await user.click(
-      screen.getByRole("button", { name: "Cancel Scrape Run" }),
-    )
+    await user.click(screen.getByRole("button", { name: "Cancel Scrape Run" }))
     await user.click(
       screen
         .getByRole("alertdialog")
@@ -288,7 +282,9 @@ describe("Scrape Run cancellation", () => {
     )
 
     await waitFor(() => {
-      expect(getRunHeader().getByLabelText("Status: Cancelled")).toBeInTheDocument()
+      expect(
+        getRunHeader().getByLabelText("Status: Cancelled"),
+      ).toBeInTheDocument()
       expect(screen.getByLabelText("Run-list cached status")).toHaveTextContent(
         "cancelled",
       )
@@ -337,10 +333,7 @@ describe("Scrape Run cancellation", () => {
         ]),
       ),
       http.post(`${detailApiUrl}/cancel`, () =>
-        HttpResponse.json(
-          { id: 17, status: "cancelled" },
-          { status: 202 },
-        ),
+        HttpResponse.json({ id: 17, status: "cancelled" }, { status: 202 }),
       ),
     )
 
@@ -360,14 +353,20 @@ describe("Scrape Run cancellation", () => {
 
     await waitFor(() => {
       expect(detailGetCount).toBe(3)
-      expect(getRunHeader().getByLabelText("Status: Cancelled")).toBeInTheDocument()
+      expect(
+        getRunHeader().getByLabelText("Status: Cancelled"),
+      ).toBeInTheDocument()
     })
 
     releaseOlderRefresh()
     await new Promise((resolve) => setTimeout(resolve, 25))
 
-    expect(getRunHeader().getByLabelText("Status: Cancelled")).toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: /cancel/i })).not.toBeInTheDocument()
+    expect(
+      getRunHeader().getByLabelText("Status: Cancelled"),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole("button", { name: /cancel/i }),
+    ).not.toBeInTheDocument()
     expect(detailGetCount).toBe(3)
   })
 
@@ -419,10 +418,7 @@ describe("Scrape Run cancellation", () => {
         ])
       }),
       http.post(`${detailApiUrl}/cancel`, () =>
-        HttpResponse.json(
-          { id: 17, status: "cancelled" },
-          { status: 202 },
-        ),
+        HttpResponse.json({ id: 17, status: "cancelled" }, { status: 202 }),
       ),
     )
 
@@ -430,9 +426,7 @@ describe("Scrape Run cancellation", () => {
     await screen.findByRole("heading", { name: "Customer stories" })
 
     const user = userEvent.setup()
-    await user.click(
-      screen.getByRole("button", { name: "Cancel Scrape Run" }),
-    )
+    await user.click(screen.getByRole("button", { name: "Cancel Scrape Run" }))
     await user.click(
       within(screen.getByRole("alertdialog")).getByRole("button", {
         name: "Cancel Scrape Run",
@@ -442,7 +436,9 @@ describe("Scrape Run cancellation", () => {
     expect(
       await screen.findByText("Couldn’t refresh scrape run"),
     ).toBeInTheDocument()
-    expect(getRunHeader().getByLabelText("Status: Cancelled")).toBeInTheDocument()
+    expect(
+      getRunHeader().getByLabelText("Status: Cancelled"),
+    ).toBeInTheDocument()
     expect(screen.getByLabelText("Run-list cached status")).toHaveTextContent(
       "cancelled",
     )
@@ -458,7 +454,9 @@ describe("Scrape Run cancellation", () => {
     await user.click(screen.getByRole("button", { name: "Retry" }))
 
     await waitFor(() => {
-      expect(screen.queryByText("Couldn’t refresh scrape run")).not.toBeInTheDocument()
+      expect(
+        screen.queryByText("Couldn’t refresh scrape run"),
+      ).not.toBeInTheDocument()
       expect(detailGetCount).toBe(4)
       expect(listGetCount).toBe(4)
     })
@@ -468,7 +466,9 @@ describe("Scrape Run cancellation", () => {
 
     releaseOlderRetry()
     await new Promise((resolve) => setTimeout(resolve, 25))
-    expect(screen.queryByText("Couldn’t refresh scrape run")).not.toBeInTheDocument()
+    expect(
+      screen.queryByText("Couldn’t refresh scrape run"),
+    ).not.toBeInTheDocument()
   })
 
   it("shows the stale-data warning when only detail revalidation fails", async () => {
@@ -502,10 +502,7 @@ describe("Scrape Run cancellation", () => {
         ])
       }),
       http.post(`${detailApiUrl}/cancel`, () =>
-        HttpResponse.json(
-          { id: 17, status: "cancelled" },
-          { status: 202 },
-        ),
+        HttpResponse.json({ id: 17, status: "cancelled" }, { status: 202 }),
       ),
     )
 
@@ -513,9 +510,7 @@ describe("Scrape Run cancellation", () => {
     await screen.findByRole("heading", { name: "Customer stories" })
 
     const user = userEvent.setup()
-    await user.click(
-      screen.getByRole("button", { name: "Cancel Scrape Run" }),
-    )
+    await user.click(screen.getByRole("button", { name: "Cancel Scrape Run" }))
     await user.click(
       within(screen.getByRole("alertdialog")).getByRole("button", {
         name: "Cancel Scrape Run",
@@ -525,7 +520,9 @@ describe("Scrape Run cancellation", () => {
     expect(
       await screen.findByText("Couldn’t refresh scrape run"),
     ).toBeInTheDocument()
-    expect(getRunHeader().getByLabelText("Status: Cancelled")).toBeInTheDocument()
+    expect(
+      getRunHeader().getByLabelText("Status: Cancelled"),
+    ).toBeInTheDocument()
     expect(screen.getByLabelText("Run-list cached status")).toHaveTextContent(
       "cancelled",
     )
@@ -537,7 +534,9 @@ describe("Scrape Run cancellation", () => {
 
     await waitFor(() => {
       expect(detailGetCount).toBe(3)
-      expect(screen.queryByText("Couldn’t refresh scrape run")).not.toBeInTheDocument()
+      expect(
+        screen.queryByText("Couldn’t refresh scrape run"),
+      ).not.toBeInTheDocument()
     })
   })
 
@@ -563,10 +562,7 @@ describe("Scrape Run cancellation", () => {
           : HttpResponse.json({ error: "Unavailable." }, { status: 503 })
       }),
       http.post(`${detailApiUrl}/cancel`, () =>
-        HttpResponse.json(
-          { id: 17, status: "cancelled" },
-          { status: 202 },
-        ),
+        HttpResponse.json({ id: 17, status: "cancelled" }, { status: 202 }),
       ),
     )
 
@@ -574,9 +570,7 @@ describe("Scrape Run cancellation", () => {
     await screen.findByRole("heading", { name: "Customer stories" })
 
     const user = userEvent.setup()
-    await user.click(
-      screen.getByRole("button", { name: "Cancel Scrape Run" }),
-    )
+    await user.click(screen.getByRole("button", { name: "Cancel Scrape Run" }))
     await user.click(
       within(screen.getByRole("alertdialog")).getByRole("button", {
         name: "Cancel Scrape Run",
@@ -586,7 +580,9 @@ describe("Scrape Run cancellation", () => {
     expect(
       await screen.findByText("Couldn’t refresh scrape run"),
     ).toBeInTheDocument()
-    expect(getRunHeader().getByLabelText("Status: Cancelled")).toBeInTheDocument()
+    expect(
+      getRunHeader().getByLabelText("Status: Cancelled"),
+    ).toBeInTheDocument()
     expect(screen.getByLabelText("Run-list cached status")).toHaveTextContent(
       "cancelled",
     )
@@ -650,9 +646,7 @@ describe("Scrape Run cancellation", () => {
     await screen.findByRole("heading", { name: "Customer stories" })
 
     const user = userEvent.setup()
-    await user.click(
-      screen.getByRole("button", { name: "Cancel Scrape Run" }),
-    )
+    await user.click(screen.getByRole("button", { name: "Cancel Scrape Run" }))
     await user.click(
       within(screen.getByRole("alertdialog")).getByRole("button", {
         name: "Cancel Scrape Run",
@@ -662,7 +656,9 @@ describe("Scrape Run cancellation", () => {
     expect(
       await screen.findByText("Cancellation hasn’t finished"),
     ).toBeInTheDocument()
-    expect(getRunHeader().getByLabelText("Status: Cancelling")).toBeInTheDocument()
+    expect(
+      getRunHeader().getByLabelText("Status: Cancelling"),
+    ).toBeInTheDocument()
     expect(
       screen.getByRole("button", { name: "Retry cancellation" }),
     ).toBeInTheDocument()
@@ -677,8 +673,12 @@ describe("Scrape Run cancellation", () => {
     window.dispatchEvent(new Event("online"))
 
     await waitFor(() => {
-      expect(getRunHeader().getByLabelText("Status: Complete")).toBeInTheDocument()
-      expect(screen.queryByText("Cancellation hasn’t finished")).not.toBeInTheDocument()
+      expect(
+        getRunHeader().getByLabelText("Status: Complete"),
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByText("Cancellation hasn’t finished"),
+      ).not.toBeInTheDocument()
     })
   })
 
@@ -727,9 +727,7 @@ describe("Scrape Run cancellation", () => {
     await screen.findByRole("heading", { name: "Customer stories" })
 
     const user = userEvent.setup()
-    await user.click(
-      screen.getByRole("button", { name: "Cancel Scrape Run" }),
-    )
+    await user.click(screen.getByRole("button", { name: "Cancel Scrape Run" }))
     await user.click(
       within(screen.getByRole("alertdialog")).getByRole("button", {
         name: "Cancel Scrape Run",
@@ -739,7 +737,9 @@ describe("Scrape Run cancellation", () => {
     expect(
       await screen.findByText("Scrape Run finished before cancellation"),
     ).toBeInTheDocument()
-    expect(getRunHeader().getByLabelText("Status: Complete")).toBeInTheDocument()
+    expect(
+      getRunHeader().getByLabelText("Status: Complete"),
+    ).toBeInTheDocument()
     expect(screen.getByLabelText("Run-list cached status")).toHaveTextContent(
       "complete",
     )
@@ -766,9 +766,7 @@ describe("Scrape Run cancellation", () => {
     await screen.findByRole("heading", { name: "Customer stories" })
 
     const user = userEvent.setup()
-    await user.click(
-      screen.getByRole("button", { name: "Cancel Scrape Run" }),
-    )
+    await user.click(screen.getByRole("button", { name: "Cancel Scrape Run" }))
     await user.click(
       within(screen.getByRole("alertdialog")).getByRole("button", {
         name: "Cancel Scrape Run",
@@ -824,7 +822,9 @@ describe("Scrape Run cancellation", () => {
       expect(
         await screen.findByText("Couldn’t confirm cancellation"),
       ).toBeInTheDocument()
-      expect(getRunHeader().getByLabelText("Status: Pending")).toBeInTheDocument()
+      expect(
+        getRunHeader().getByLabelText("Status: Pending"),
+      ).toBeInTheDocument()
       expect(
         screen.getByRole("button", { name: "Cancel Scrape Run" }),
       ).toBeInTheDocument()
@@ -870,9 +870,7 @@ describe("Scrape Run cancellation", () => {
     ).toBeDisabled()
     expect(postCount).toBe(1)
 
-    fireEvent.click(
-      within(dialog).getByRole("button", { name: "Cancelling…" }),
-    )
+    fireEvent.click(within(dialog).getByRole("button", { name: "Cancelling…" }))
     await user.keyboard("{Escape}")
     fireEvent.click(
       screen.getByRole("button", { name: "Cancel Scrape Run", hidden: true }),

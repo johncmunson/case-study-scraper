@@ -75,25 +75,37 @@ describe("Scrape Job detail frontend contract", () => {
     ).toBe(false)
   })
 
-  it.each(["pending", "in_progress", "complete", "failed", "cancelled"] as const)(
-    "accepts parent Run status %s",
-    (status) => {
-      expect(
-        scrapeJobDetailSchema.safeParse({
-          ...validScrapeJobDetail,
-          scrapeRun: { ...validScrapeJobDetail.scrapeRun, status },
-        }).success,
-      ).toBe(true)
-    },
-  )
+  it.each([
+    "pending",
+    "in_progress",
+    "complete",
+    "failed",
+    "cancelled",
+  ] as const)("accepts parent Run status %s", (status) => {
+    expect(
+      scrapeJobDetailSchema.safeParse({
+        ...validScrapeJobDetail,
+        scrapeRun: { ...validScrapeJobDetail.scrapeRun, status },
+      }).success,
+    ).toBe(true)
+  })
 
   it.each([
     ["Job ID", { id: 0 }],
     ["non-integer Job ID", { id: 1.5 }],
     ["Run ID", { scrapeRun: { ...validScrapeJobDetail.scrapeRun, id: -1 } }],
-    ["non-integer Run ID", { scrapeRun: { ...validScrapeJobDetail.scrapeRun, id: 1.5 } }],
-    ["Run name", { scrapeRun: { ...validScrapeJobDetail.scrapeRun, name: "" } }],
-    ["Run status", { scrapeRun: { ...validScrapeJobDetail.scrapeRun, status: "paused" } }],
+    [
+      "non-integer Run ID",
+      { scrapeRun: { ...validScrapeJobDetail.scrapeRun, id: 1.5 } },
+    ],
+    [
+      "Run name",
+      { scrapeRun: { ...validScrapeJobDetail.scrapeRun, name: "" } },
+    ],
+    [
+      "Run status",
+      { scrapeRun: { ...validScrapeJobDetail.scrapeRun, status: "paused" } },
+    ],
     ["Job URL", { url: "ftp://example.com/customer" }],
     ["status", { status: "paused" }],
     ["attempt count", { attemptCount: -1 }],
@@ -101,11 +113,26 @@ describe("Scrape Job detail frontend contract", () => {
     ["failure code", { failureCode: "provider_exploded" }],
     ["created timestamp", { createdAt: "yesterday" }],
     ["nullable timestamp", { startedAt: "soon" }],
-    ["field position", { fields: [{ ...validScrapeJobDetail.fields[0], position: -1 }] }],
-    ["non-integer field position", { fields: [{ ...validScrapeJobDetail.fields[0], position: 0.5 }] }],
-    ["field label", { fields: [{ ...validScrapeJobDetail.fields[0], label: "" }] }],
-    ["field key", { fields: [{ ...validScrapeJobDetail.fields[0], key: "Client Name" }] }],
-    ["field description", { fields: [{ ...validScrapeJobDetail.fields[0], description: "" }] }],
+    [
+      "field position",
+      { fields: [{ ...validScrapeJobDetail.fields[0], position: -1 }] },
+    ],
+    [
+      "non-integer field position",
+      { fields: [{ ...validScrapeJobDetail.fields[0], position: 0.5 }] },
+    ],
+    [
+      "field label",
+      { fields: [{ ...validScrapeJobDetail.fields[0], label: "" }] },
+    ],
+    [
+      "field key",
+      { fields: [{ ...validScrapeJobDetail.fields[0], key: "Client Name" }] },
+    ],
+    [
+      "field description",
+      { fields: [{ ...validScrapeJobDetail.fields[0], description: "" }] },
+    ],
   ])("rejects an invalid %s", (_label, replacement) => {
     expect(
       scrapeJobDetailSchema.safeParse({
@@ -181,10 +208,7 @@ describe("Scrape Job detail frontend contract", () => {
       "a null required value",
       { ...validScrapeJobDetail.result, industry: null },
     ],
-    [
-      "a non-string value",
-      { ...validScrapeJobDetail.result, industry: 42 },
-    ],
+    ["a non-string value", { ...validScrapeJobDetail.result, industry: 42 }],
   ])("rejects a complete result with %s", (_label, result) => {
     expect(
       scrapeJobDetailSchema.safeParse({
@@ -298,32 +322,34 @@ describe("Scrape Job detail API path and fetcher", () => {
       const detail = {
         ...validScrapeJobDetail,
         status,
-        result:
-          status === "complete" ? validScrapeJobDetail.result : null,
+        result: status === "complete" ? validScrapeJobDetail.result : null,
       }
       server.use(http.get(detailUrl, () => HttpResponse.json(detail)))
 
-      await expect(
-        fetchScrapeJobDetail(detailUrl, 17, 31),
-      ).resolves.toEqual(detail)
+      await expect(fetchScrapeJobDetail(detailUrl, 17, 31)).resolves.toEqual(
+        detail,
+      )
     },
   )
 
   it.each([
     ["Run ID", 18, 31],
     ["Job ID", 17, 32],
-  ])("rejects a response whose %s does not match the route", async (_label, runId, jobId) => {
-    server.use(
-      http.get(detailUrl, () => HttpResponse.json(validScrapeJobDetail)),
-    )
+  ])(
+    "rejects a response whose %s does not match the route",
+    async (_label, runId, jobId) => {
+      server.use(
+        http.get(detailUrl, () => HttpResponse.json(validScrapeJobDetail)),
+      )
 
-    await expect(
-      fetchScrapeJobDetail(detailUrl, runId, jobId),
-    ).rejects.toMatchObject({
-      message: "The server returned an invalid response.",
-      status: 200,
-    })
-  })
+      await expect(
+        fetchScrapeJobDetail(detailUrl, runId, jobId),
+      ).rejects.toMatchObject({
+        message: "The server returned an invalid response.",
+        status: 200,
+      })
+    },
+  )
 
   it("rejects malformed JSON without exposing validation internals", async () => {
     server.use(
@@ -349,30 +375,27 @@ describe("Scrape Job detail API path and fetcher", () => {
   it("retains a safe API error from an unsuccessful response", async () => {
     server.use(
       http.get(detailUrl, () =>
-        HttpResponse.json(
-          { error: "Scrape job not found." },
-          { status: 404 },
-        ),
+        HttpResponse.json({ error: "Scrape job not found." }, { status: 404 }),
       ),
     )
 
-    await expect(
-      fetchScrapeJobDetail(detailUrl, 17, 31),
-    ).rejects.toMatchObject({
-      message: "Scrape job not found.",
-      status: 404,
-    })
+    await expect(fetchScrapeJobDetail(detailUrl, 17, 31)).rejects.toMatchObject(
+      {
+        message: "Scrape job not found.",
+        status: 404,
+      },
+    )
   })
 
   it("uses a safe message for network failures", async () => {
     server.use(http.get(detailUrl, () => HttpResponse.error()))
 
-    await expect(
-      fetchScrapeJobDetail(detailUrl, 17, 31),
-    ).rejects.toMatchObject({
-      message: "Unable to load the scrape job.",
-      status: undefined,
-    })
+    await expect(fetchScrapeJobDetail(detailUrl, 17, 31)).rejects.toMatchObject(
+      {
+        message: "Unable to load the scrape job.",
+        status: undefined,
+      },
+    )
   })
 })
 

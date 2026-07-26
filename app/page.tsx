@@ -308,9 +308,9 @@ export default async function LandingPage() {
                 A sourced Extraction Dataset, ready for analysis.
               </h2>
               <p className="mt-5 max-w-2xl leading-7 text-muted-foreground">
-                Each successful Extraction Result keeps the structured values you chose
-                alongside its Canonical Page URL, so the result remains easy to
-                trace and review.
+                Each successful Extraction Result keeps the structured values
+                you chose alongside its Canonical Page URL, so the result
+                remains easy to trace and review.
               </p>
             </div>
 
@@ -339,19 +339,34 @@ export default async function LandingPage() {
                       </caption>
                       <thead className="bg-muted/60 text-muted-foreground">
                         <tr>
-                          <th scope="col" className="w-[16%] px-3 py-2.5 font-medium">
+                          <th
+                            scope="col"
+                            className="w-[16%] px-3 py-2.5 font-medium"
+                          >
                             Client
                           </th>
-                          <th scope="col" className="w-[14%] px-3 py-2.5 font-medium">
+                          <th
+                            scope="col"
+                            className="w-[14%] px-3 py-2.5 font-medium"
+                          >
                             Industry
                           </th>
-                          <th scope="col" className="w-[22%] px-3 py-2.5 font-medium">
+                          <th
+                            scope="col"
+                            className="w-[22%] px-3 py-2.5 font-medium"
+                          >
                             Services
                           </th>
-                          <th scope="col" className="w-[20%] px-3 py-2.5 font-medium">
+                          <th
+                            scope="col"
+                            className="w-[20%] px-3 py-2.5 font-medium"
+                          >
                             Outcome
                           </th>
-                          <th scope="col" className="w-[28%] px-3 py-2.5 font-medium">
+                          <th
+                            scope="col"
+                            className="w-[28%] px-3 py-2.5 font-medium"
+                          >
                             Canonical Page URL
                           </th>
                         </tr>
@@ -391,7 +406,8 @@ export default async function LandingPage() {
                       >
                         <p className="font-medium">{result.client}</p>
                         <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                          {result.industry} · {result.services} · {result.outcome}
+                          {result.industry} · {result.services} ·{" "}
+                          {result.outcome}
                         </p>
                         <p className="mt-3 break-all border-t pt-2 font-mono text-[0.68rem] leading-5 text-muted-foreground">
                           {result.canonicalPageUrl}
@@ -407,7 +423,10 @@ export default async function LandingPage() {
                   <CardContent className="space-y-4">
                     <div className="flex items-center gap-3">
                       <span className="grid size-9 place-items-center rounded-lg bg-brand-surface text-brand-surface-foreground">
-                        <FileSpreadsheet aria-hidden="true" className="size-4" />
+                        <FileSpreadsheet
+                          aria-hidden="true"
+                          className="size-4"
+                        />
                       </span>
                       <p className="font-semibold">CSV</p>
                     </div>
@@ -436,20 +455,31 @@ export default async function LandingPage() {
 
             <div className="mt-5 grid gap-5 rounded-xl border bg-card p-5 sm:grid-cols-[1fr_auto] sm:items-center sm:p-6">
               <div>
-                <h3 className="font-semibold">Review outcomes before download</h3>
+                <h3 className="font-semibold">
+                  Review outcomes before download
+                </h3>
                 <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
                   Inspect successful and failed Scrape Job outcomes first.
                   Downloads become available after the run is terminal and
                   contain successful Extraction Results.
                 </p>
               </div>
-              <div className="flex flex-wrap gap-2 text-xs" aria-label="Example Scrape Job outcomes">
+              <div
+                className="flex flex-wrap gap-2 text-xs"
+                aria-label="Example Scrape Job outcomes"
+              >
                 <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 font-medium">
-                  <CheckCircle2 aria-hidden="true" className="size-3.5 text-primary" />
+                  <CheckCircle2
+                    aria-hidden="true"
+                    className="size-3.5 text-primary"
+                  />
                   Successful
                 </span>
                 <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 font-medium">
-                  <CircleAlert aria-hidden="true" className="size-3.5 text-muted-foreground" />
+                  <CircleAlert
+                    aria-hidden="true"
+                    className="size-3.5 text-muted-foreground"
+                  />
                   Failed
                 </span>
               </div>

@@ -193,7 +193,8 @@ describe("AI structured URL filtering adapter", () => {
       }),
     ).rejects.toMatchObject({
       constructor: FatalError,
-      message: "Filtering provider request cannot succeed without intervention.",
+      message:
+        "Filtering provider request cannot succeed without intervention.",
     })
   })
 

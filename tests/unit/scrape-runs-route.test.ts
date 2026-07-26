@@ -17,9 +17,7 @@ vi.mock("@/auth/session", () => ({
 
 vi.mock("@/lib/server/scrape-runs/repository", async (importOriginal) => {
   const original =
-    await importOriginal<
-      typeof import("@/lib/server/scrape-runs/repository")
-    >()
+    await importOriginal<typeof import("@/lib/server/scrape-runs/repository")>()
 
   return {
     ...original,
@@ -200,10 +198,7 @@ describe("POST /api/scrape-runs", () => {
   })
 
   it("persists normalized values, dispatches the Workflow, and returns the created summary", async () => {
-    vi.stubEnv(
-      "URL_FILTER_MODEL",
-      "  anthropic/claude-sonnet-4.5  ",
-    )
+    vi.stubEnv("URL_FILTER_MODEL", "  anthropic/claude-sonnet-4.5  ")
     const log = vi.spyOn(console, "log").mockImplementation(() => undefined)
     const response = await POST(
       createRequest({
@@ -272,8 +267,7 @@ describe("POST /api/scrape-runs", () => {
     },
     {
       label: "cannot attach the ID",
-      configure: () =>
-        vi.mocked(attachWorkflowRunId).mockResolvedValue(false),
+      configure: () => vi.mocked(attachWorkflowRunId).mockResolvedValue(false),
     },
   ])(
     "returns 503 when post-dispatch ID attachment $label",

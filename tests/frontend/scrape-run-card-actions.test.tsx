@@ -98,7 +98,9 @@ describe("Scrape Run card actions", () => {
   it("keeps the selected action stable when polling changes the Run status", async () => {
     const view = renderActions(summary({ status: "pending" }))
     const { menu } = await openMenu()
-    await userEvent.click(within(menu).getByRole("menuitem", { name: "Cancel" }))
+    await userEvent.click(
+      within(menu).getByRole("menuitem", { name: "Cancel" }),
+    )
     await screen.findByRole("alertdialog", { name: "Cancel Scrape Run?" })
 
     view.rerender(
@@ -117,7 +119,9 @@ describe("Scrape Run card actions", () => {
     renderActions(summary())
     const { trigger, menu } = await openMenu()
 
-    await userEvent.click(within(menu).getByRole("menuitem", { name: "Cancel" }))
+    await userEvent.click(
+      within(menu).getByRole("menuitem", { name: "Cancel" }),
+    )
 
     const dialog = await screen.findByRole("alertdialog", {
       name: "Cancel Scrape Run?",
@@ -163,7 +167,9 @@ describe("Scrape Run card actions", () => {
 
     await screen.findByLabelText("Status: Pending")
     const { menu } = await openMenu()
-    await userEvent.click(within(menu).getByRole("menuitem", { name: "Cancel" }))
+    await userEvent.click(
+      within(menu).getByRole("menuitem", { name: "Cancel" }),
+    )
     await userEvent.click(
       await screen.findByRole("button", { name: "Cancel Scrape Run" }),
     )
@@ -201,7 +207,9 @@ describe("Scrape Run card actions", () => {
 
     await screen.findByLabelText("Status: Complete")
     const { trigger, menu } = await openMenu()
-    await userEvent.click(within(menu).getByRole("menuitem", { name: "Delete" }))
+    await userEvent.click(
+      within(menu).getByRole("menuitem", { name: "Delete" }),
+    )
     const dialog = await screen.findByRole("alertdialog", {
       name: "Delete Scrape Run?",
     })
@@ -214,10 +222,16 @@ describe("Scrape Run card actions", () => {
     fireEvent.click(confirmation)
     fireEvent.click(confirmation)
 
-    expect(screen.getByText("Customer stories", { selector: "h2" })).toBeInTheDocument()
+    expect(
+      screen.getByText("Customer stories", { selector: "h2" }),
+    ).toBeInTheDocument()
     expect(trigger).toBeDisabled()
-    expect(within(dialog).getByRole("button", { name: "Keep Scrape Run" })).toBeDisabled()
-    expect(within(dialog).getByRole("button", { name: "Deleting…" })).toBeDisabled()
+    expect(
+      within(dialog).getByRole("button", { name: "Keep Scrape Run" }),
+    ).toBeDisabled()
+    expect(
+      within(dialog).getByRole("button", { name: "Deleting…" }),
+    ).toBeDisabled()
     await userEvent.keyboard("{Escape}{Enter}")
     expect(screen.getByRole("alertdialog")).toBeVisible()
     expect(deleteCount).toBe(1)
@@ -252,18 +266,20 @@ describe("Scrape Run card actions", () => {
 
     await screen.findByLabelText("Status: Complete")
     const { menu } = await openMenu()
-    await userEvent.click(within(menu).getByRole("menuitem", { name: "Delete" }))
+    await userEvent.click(
+      within(menu).getByRole("menuitem", { name: "Delete" }),
+    )
     await userEvent.click(
       await screen.findByRole("button", { name: "Delete Scrape Run" }),
     )
 
     expect(
-      await screen.findByText(
-        "Error: An active scrape run cannot be deleted.",
-      ),
+      await screen.findByText("Error: An active scrape run cannot be deleted."),
     ).toBeVisible()
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument()
-    expect(screen.getByRole("heading", { name: "Customer stories" })).toBeVisible()
+    expect(
+      screen.getByRole("heading", { name: "Customer stories" }),
+    ).toBeVisible()
     await waitFor(() => expect(getCount).toBeGreaterThan(1))
   })
 })

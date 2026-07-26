@@ -62,11 +62,7 @@ Job statuses are:
 
 ```ts
 type ScrapeJobStatus =
-  | "pending"
-  | "in_progress"
-  | "complete"
-  | "failed"
-  | "cancelled"
+  "pending" | "in_progress" | "complete" | "failed" | "cancelled"
 ```
 
 `pending` and `in_progress` are active; all others are terminal.
@@ -241,13 +237,13 @@ Existing Job links on the parent Run page remain semantic Next.js Links with `pr
 
 ### 7.2 Status and lifecycle
 
-| Status | Label | Main state |
-|---|---|---|
-| `pending` | Pending | Waiting to start extraction |
-| `in_progress` | In progress | Extracting data from this page |
-| `complete` | Complete | Ordered Extraction Result |
-| `failed` | Failed | Sanitized failure presentation |
-| `cancelled` | Cancelled | Extraction was cancelled before this job finished |
+| Status        | Label       | Main state                                        |
+| ------------- | ----------- | ------------------------------------------------- |
+| `pending`     | Pending     | Waiting to start extraction                       |
+| `in_progress` | In progress | Extracting data from this page                    |
+| `complete`    | Complete    | Ordered Extraction Result                         |
+| `failed`      | Failed      | Sanitized failure presentation                    |
+| `cancelled`   | Cancelled   | Extraction was cancelled before this job finished |
 
 Show a textual status badge, attempt count including zero, Created always, Started when available, and Finished when available. Use semantic `<time dateTime>` elements and the existing stable locale formatter.
 

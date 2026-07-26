@@ -37,8 +37,7 @@ export async function findOwnedScrapeRunExtractionDatasetSource({
       ...ownedRun,
       fields: [],
       successfulJobs: [],
-    } satisfies ExtractionDatasetSource &
-      Readonly<{ id: number; name: string }>
+    } satisfies ExtractionDatasetSource & Readonly<{ id: number; name: string }>
   }
 
   const run = await db.query.scrapeRuns.findFirst({

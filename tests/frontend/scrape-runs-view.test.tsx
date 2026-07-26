@@ -71,7 +71,9 @@ describe("Scrape Run list states", () => {
 
     expect(screen.getByRole("heading", { name: "Run 1" })).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Run 15" })).toBeInTheDocument()
-    expect(screen.queryByRole("heading", { name: "Run 16" })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole("heading", { name: "Run 16" }),
+    ).not.toBeInTheDocument()
     expect(screen.queryByText(/\d+–\d+ of \d+ runs/)).not.toBeInTheDocument()
     expect(screen.getByText("Page 1 of 3")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Previous page" })).toBeDisabled()
@@ -80,14 +82,18 @@ describe("Scrape Run list states", () => {
 
     expect(screen.getByRole("heading", { name: "Run 16" })).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Run 30" })).toBeInTheDocument()
-    expect(screen.queryByRole("heading", { name: "Run 15" })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole("heading", { name: "Run 15" }),
+    ).not.toBeInTheDocument()
     expect(screen.getByText("Page 2 of 3")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Next page" })).toBeEnabled()
 
     await userEvent.click(screen.getByRole("button", { name: "Next page" }))
 
     expect(screen.getByRole("heading", { name: "Run 31" })).toBeInTheDocument()
-    expect(screen.queryByRole("heading", { name: "Run 30" })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole("heading", { name: "Run 30" }),
+    ).not.toBeInTheDocument()
     expect(screen.getByText("Page 3 of 3")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Next page" })).toBeDisabled()
 
@@ -101,7 +107,9 @@ describe("Scrape Run list states", () => {
 
     expect(screen.getByRole("heading", { name: "Run 1" })).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Run 5" })).toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: "Next page" })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole("button", { name: "Next page" }),
+    ).not.toBeInTheDocument()
   })
 
   it("renders every status and state-aware Scrape Job summary", () => {
@@ -197,12 +205,27 @@ describe("Scrape Run list states", () => {
     )
 
     const expectedItems = [
-      ["Pending preparation", "Pending", "Preparing matching pages…", "secondary"],
+      [
+        "Pending preparation",
+        "Pending",
+        "Preparing matching pages…",
+        "secondary",
+      ],
       ["Partial active", "In progress", "2 of 4 jobs finished", "default"],
       ["Cancellation cleanup", "Cancelling", "4 of 5 jobs finished", "outline"],
       ["Mixed completion", "Complete", "3 succeeded · 1 failed", "secondary"],
-      ["Preparation failure", "Failed", "No scrape jobs created", "destructive"],
-      ["Cancelled extraction", "Cancelled", "2 succeeded · 1 failed · 2 cancelled", "outline"],
+      [
+        "Preparation failure",
+        "Failed",
+        "No scrape jobs created",
+        "destructive",
+      ],
+      [
+        "Cancelled extraction",
+        "Cancelled",
+        "2 succeeded · 1 failed · 2 cancelled",
+        "outline",
+      ],
     ] as const
 
     for (const [name, status, jobSummary, badgeVariant] of expectedItems) {
@@ -215,7 +238,10 @@ describe("Scrape Run list states", () => {
       expect(itemQueries.getByText(jobSummary)).toBeInTheDocument()
       expect(itemQueries.getByText("www.example.com")).toBeInTheDocument()
       const createdAt = item?.querySelector("time")
-      expect(createdAt).toHaveAttribute("datetime", validScrapeRunSummary.createdAt)
+      expect(createdAt).toHaveAttribute(
+        "datetime",
+        validScrapeRunSummary.createdAt,
+      )
       expect(createdAt).not.toHaveTextContent(/^\s*$/)
       expect(createdAt).toHaveAccessibleName(
         `Created ${createdAt?.textContent}`,
@@ -238,7 +264,9 @@ describe("Scrape Run list states", () => {
     for (const spinner of statusSpinners) {
       expect(spinner).toHaveClass("motion-reduce:animate-none")
     }
-    expect(screen.queryByText(validScrapeRunSummary.targetUrl)).not.toBeInTheDocument()
+    expect(
+      screen.queryByText(validScrapeRunSummary.targetUrl),
+    ).not.toBeInTheDocument()
 
     const progress = screen.getByRole("progressbar", {
       name: "Scrape Job progress for Partial active",
@@ -269,14 +297,12 @@ describe("Scrape Run list states", () => {
       <ScrapeRunList summaries={runs} error={undefined} onRetry={vi.fn()} />,
     )
 
-    expect(screen.getByRole("link", { name: /Customer stories/ })).toHaveAttribute(
-      "href",
-      "/app/scrape-runs/17",
-    )
-    expect(screen.getByRole("link", { name: /Partner profiles/ })).toHaveAttribute(
-      "href",
-      "/app/scrape-runs/29",
-    )
+    expect(
+      screen.getByRole("link", { name: /Customer stories/ }),
+    ).toHaveAttribute("href", "/app/scrape-runs/17")
+    expect(
+      screen.getByRole("link", { name: /Partner profiles/ }),
+    ).toHaveAttribute("href", "/app/scrape-runs/29")
     const customerStoriesLink = screen.getByRole("link", {
       name: /Customer stories/,
     })
@@ -296,7 +322,9 @@ describe("Scrape Run list states", () => {
   })
 
   it("keeps long content understandable in a constrained list item", () => {
-    const longName = "Quarterly international customer success stories ".repeat(2).trim()
+    const longName = "Quarterly international customer success stories "
+      .repeat(2)
+      .trim()
     const longHostname = `${"customer-stories-".repeat(3)}archive.example.com`
     const longRun = summary({
       name: longName,
@@ -321,7 +349,10 @@ describe("Scrape Run list states", () => {
       "title",
       longName,
     )
-    expect(screen.getByText(longHostname)).toHaveAttribute("title", longHostname)
+    expect(screen.getByText(longHostname)).toHaveAttribute(
+      "title",
+      longHostname,
+    )
     expect(screen.getByLabelText("Status: Complete")).toBeInTheDocument()
     expect(item?.querySelector("time")).toHaveAccessibleName(/^Created /)
   })

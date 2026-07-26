@@ -54,10 +54,7 @@ export async function scrapeRunWorkflow(
         throw error
       }
 
-      const failed = await failRunPreparationStep(
-        scrapeRunId,
-        "mapping_failed",
-      )
+      const failed = await failRunPreparationStep(scrapeRunId, "mapping_failed")
       return {
         outcome: failed ? "mapping_failed" : "stopped",
         scrapeRunId,

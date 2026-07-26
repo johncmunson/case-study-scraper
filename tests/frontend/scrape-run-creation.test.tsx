@@ -87,10 +87,7 @@ async function openAndFillForm() {
     "https://www.example.com/story/two",
   )
   await user.type(screen.getByLabelText("Label"), "Company Name")
-  await user.type(
-    screen.getByLabelText("Description"),
-    "Customer company name",
-  )
+  await user.type(screen.getByLabelText("Description"), "Customer company name")
 
   return user
 }
@@ -201,9 +198,7 @@ describe("Scrape Run creation", () => {
 
     const dialog = screen.getByRole("dialog")
     await waitFor(() => {
-      expect(
-        screen.getByRole("button", { name: /Creating…/ }),
-      ).toBeDisabled()
+      expect(screen.getByRole("button", { name: /Creating…/ })).toBeDisabled()
     })
     expect(screen.getByRole("button", { name: "Close" })).toBeDisabled()
     expect(screen.getByLabelText("Name")).toBeDisabled()
@@ -238,7 +233,10 @@ describe("Scrape Run creation", () => {
     {
       kind: "validation",
       response: () =>
-        HttpResponse.json({ error: "Check the Run Configuration." }, { status: 400 }),
+        HttpResponse.json(
+          { error: "Check the Run Configuration." },
+          { status: 400 },
+        ),
       warning: "Error: Check the Run Configuration.",
     },
     {
@@ -265,13 +263,13 @@ describe("Scrape Run creation", () => {
       renderView()
       await screen.findByText("No scrape runs yet")
       const user = await openAndFillForm()
-      await user.click(screen.getByRole("button", { name: "Create Scrape Run" }))
+      await user.click(
+        screen.getByRole("button", { name: "Create Scrape Run" }),
+      )
 
       expect(await screen.findByText(warning)).toBeInTheDocument()
       expect(screen.getByRole("dialog")).toBeInTheDocument()
-      expect(screen.getByLabelText("Name")).toHaveValue(
-        "New customer stories",
-      )
+      expect(screen.getByLabelText("Name")).toHaveValue("New customer stories")
       expect(
         screen.getByRole("button", { name: "Create Scrape Run" }),
       ).toBeEnabled()
@@ -291,10 +289,7 @@ describe("Scrape Run creation", () => {
         return HttpResponse.json(getCount === 1 ? [] : [activeRun])
       }),
       http.post(apiUrl, () =>
-        HttpResponse.json(
-          { error: "Another run is active." },
-          { status: 409 },
-        ),
+        HttpResponse.json({ error: "Another run is active." }, { status: 409 }),
       ),
     )
 
@@ -303,7 +298,9 @@ describe("Scrape Run creation", () => {
     const user = await openAndFillForm()
     await user.click(screen.getByRole("button", { name: "Create Scrape Run" }))
 
-    expect(await screen.findByText("Error: Another run is active.")).toBeInTheDocument()
+    expect(
+      await screen.findByText("Error: Another run is active."),
+    ).toBeInTheDocument()
     expect(await screen.findByRole("status")).toHaveTextContent(
       /Another Scrape Run is active/,
     )
@@ -350,7 +347,9 @@ describe("Scrape Run creation", () => {
     const user = await openAndFillForm()
     await user.click(screen.getByRole("button", { name: "Create Scrape Run" }))
 
-    expect(await screen.findByText("Error: Dispatch failed.")).toBeInTheDocument()
+    expect(
+      await screen.findByText("Error: Dispatch failed."),
+    ).toBeInTheDocument()
     await waitFor(() => expect(getCount).toBe(2))
     expect(
       screen.getByRole("heading", {
@@ -380,7 +379,9 @@ describe("Scrape Run creation", () => {
     await user.click(screen.getByRole("button", { name: "Create Scrape Run" }))
 
     expect(
-      await screen.findByText("Error: The server returned an invalid response."),
+      await screen.findByText(
+        "Error: The server returned an invalid response.",
+      ),
     ).toBeInTheDocument()
     expect(screen.getByRole("dialog")).toBeInTheDocument()
     expect(screen.getByLabelText("Name")).toHaveValue("New customer stories")
@@ -578,7 +579,9 @@ describe("Scrape Run creation", () => {
       screen.queryByRole("heading", { name: "Stale duplicate" }),
     ).not.toBeInTheDocument()
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
-    expect(await screen.findByText("New scrape run created")).toBeInTheDocument()
+    expect(
+      await screen.findByText("New scrape run created"),
+    ).toBeInTheDocument()
     expect(unavailableCreateControl).toHaveFocus()
 
     await delay(50)

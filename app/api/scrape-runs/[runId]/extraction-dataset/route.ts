@@ -123,11 +123,7 @@ export async function GET(
     return generationFailureResponse()
   }
 
-  const filename = getExtractionDatasetFilename(
-    source.name,
-    source.id,
-    format,
-  )
+  const filename = getExtractionDatasetFilename(source.name, source.id, format)
 
   return new Response(body, {
     headers: {

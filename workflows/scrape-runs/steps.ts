@@ -149,9 +149,7 @@ export async function failRunPreparationStep(
   })
 }
 
-export async function handleUnexpectedWorkflowFailureStep(
-  scrapeRunId: number,
-) {
+export async function handleUnexpectedWorkflowFailureStep(scrapeRunId: number) {
   "use step"
 
   return handleUnexpectedWorkflowFailure({

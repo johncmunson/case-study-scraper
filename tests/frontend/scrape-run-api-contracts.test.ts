@@ -47,9 +47,9 @@ describe("Scrape Run frontend contracts", () => {
     expect(scrapeRunSummarySchema.parse(validScrapeRunSummary)).toEqual(
       validScrapeRunSummary,
     )
-    expect(
-      scrapeRunSummaryListSchema.parse([validScrapeRunSummary]),
-    ).toEqual([validScrapeRunSummary])
+    expect(scrapeRunSummaryListSchema.parse([validScrapeRunSummary])).toEqual([
+      validScrapeRunSummary,
+    ])
   })
 
   it.each([
@@ -110,19 +110,75 @@ describe("Scrape Run detail frontend contract", () => {
     ["Example Page URL", { exampleUrls: ["ftp://example.com/one"] }],
     ["filtering model", { filteringModel: "" }],
     ["job ID", { jobs: [{ ...validScrapeRunDetail.jobs[0], id: -1 }] }],
-    ["job status", { jobs: [{ ...validScrapeRunDetail.jobs[0], status: "paused" }] }],
-    ["job URL", { jobs: [{ ...validScrapeRunDetail.jobs[0], url: "mailto:a@example.com" }] }],
-    ["job failure code", { jobs: [{ ...validScrapeRunDetail.jobs[0], failureCode: "unknown" }] }],
-    ["job attempts", { jobs: [{ ...validScrapeRunDetail.jobs[0], attemptCount: -1 }] }],
-    ["job timestamp", { jobs: [{ ...validScrapeRunDetail.jobs[0], updatedAt: null }] }],
-    ["field position", { fields: [{ ...validScrapeRunDetail.fields[0], position: -1 }] }],
-    ["field label", { fields: [{ ...validScrapeRunDetail.fields[0], label: "" }] }],
+    [
+      "job status",
+      { jobs: [{ ...validScrapeRunDetail.jobs[0], status: "paused" }] },
+    ],
+    [
+      "job URL",
+      {
+        jobs: [
+          { ...validScrapeRunDetail.jobs[0], url: "mailto:a@example.com" },
+        ],
+      },
+    ],
+    [
+      "job failure code",
+      { jobs: [{ ...validScrapeRunDetail.jobs[0], failureCode: "unknown" }] },
+    ],
+    [
+      "job attempts",
+      { jobs: [{ ...validScrapeRunDetail.jobs[0], attemptCount: -1 }] },
+    ],
+    [
+      "job timestamp",
+      { jobs: [{ ...validScrapeRunDetail.jobs[0], updatedAt: null }] },
+    ],
+    [
+      "field position",
+      { fields: [{ ...validScrapeRunDetail.fields[0], position: -1 }] },
+    ],
+    [
+      "field label",
+      { fields: [{ ...validScrapeRunDetail.fields[0], label: "" }] },
+    ],
     ["field key", { fields: [{ ...validScrapeRunDetail.fields[0], key: "" }] }],
-    ["field description", { fields: [{ ...validScrapeRunDetail.fields[0], description: "" }] }],
-    ["stage status", { stages: validScrapeRunDetail.stages.map((stage, index) => index === 0 ? { ...stage, status: "paused" } : stage) }],
-    ["stage attempts", { stages: validScrapeRunDetail.stages.map((stage, index) => index === 0 ? { ...stage, attemptCount: 1.5 } : stage) }],
-    ["stage failure code", { stages: validScrapeRunDetail.stages.map((stage, index) => index === 0 ? { ...stage, failureCode: "unknown" } : stage) }],
-    ["stage timestamp", { stages: validScrapeRunDetail.stages.map((stage, index) => index === 0 ? { ...stage, createdAt: null } : stage) }],
+    [
+      "field description",
+      { fields: [{ ...validScrapeRunDetail.fields[0], description: "" }] },
+    ],
+    [
+      "stage status",
+      {
+        stages: validScrapeRunDetail.stages.map((stage, index) =>
+          index === 0 ? { ...stage, status: "paused" } : stage,
+        ),
+      },
+    ],
+    [
+      "stage attempts",
+      {
+        stages: validScrapeRunDetail.stages.map((stage, index) =>
+          index === 0 ? { ...stage, attemptCount: 1.5 } : stage,
+        ),
+      },
+    ],
+    [
+      "stage failure code",
+      {
+        stages: validScrapeRunDetail.stages.map((stage, index) =>
+          index === 0 ? { ...stage, failureCode: "unknown" } : stage,
+        ),
+      },
+    ],
+    [
+      "stage timestamp",
+      {
+        stages: validScrapeRunDetail.stages.map((stage, index) =>
+          index === 0 ? { ...stage, createdAt: null } : stage,
+        ),
+      },
+    ],
   ])("rejects an invalid %s", (_label, replacement) => {
     expect(
       scrapeRunDetailSchema.safeParse({
@@ -134,9 +190,28 @@ describe("Scrape Run detail frontend contract", () => {
 
   it.each([
     ["missing", validScrapeRunDetail.stages.slice(0, 2)],
-    ["unknown", validScrapeRunDetail.stages.map((stage, index) => index === 0 ? { ...stage, stage: "discovery" } : stage)],
-    ["duplicate", [validScrapeRunDetail.stages[0], validScrapeRunDetail.stages[0], validScrapeRunDetail.stages[2]]],
-    ["misordered", [validScrapeRunDetail.stages[1], validScrapeRunDetail.stages[0], validScrapeRunDetail.stages[2]]],
+    [
+      "unknown",
+      validScrapeRunDetail.stages.map((stage, index) =>
+        index === 0 ? { ...stage, stage: "discovery" } : stage,
+      ),
+    ],
+    [
+      "duplicate",
+      [
+        validScrapeRunDetail.stages[0],
+        validScrapeRunDetail.stages[0],
+        validScrapeRunDetail.stages[2],
+      ],
+    ],
+    [
+      "misordered",
+      [
+        validScrapeRunDetail.stages[1],
+        validScrapeRunDetail.stages[0],
+        validScrapeRunDetail.stages[2],
+      ],
+    ],
   ])("rejects %s Run Stages", (_label, stages) => {
     expect(
       scrapeRunDetailSchema.safeParse({ ...validScrapeRunDetail, stages })
@@ -500,17 +575,20 @@ describe("Scrape Run frontend fetchers", () => {
     [{ id: 0, status: "cancelled" }, "non-positive ID"],
     [{ id: 17, status: "complete" }, "non-cancelled status"],
     [{ id: 17 }, "missing status"],
-  ])("rejects a malformed cancellation response with %s", async (body, _label) => {
-    const cancelUrl = `${apiUrl}/17/cancel`
-    server.use(
-      http.post(cancelUrl, () => HttpResponse.json(body, { status: 202 })),
-    )
+  ])(
+    "rejects a malformed cancellation response with %s",
+    async (body, _label) => {
+      const cancelUrl = `${apiUrl}/17/cancel`
+      server.use(
+        http.post(cancelUrl, () => HttpResponse.json(body, { status: 202 })),
+      )
 
-    await expect(cancelScrapeRun(cancelUrl)).rejects.toMatchObject({
-      message: "The server returned an invalid response.",
-      status: 202,
-    })
-  })
+      await expect(cancelScrapeRun(cancelUrl)).rejects.toMatchObject({
+        message: "The server returned an invalid response.",
+        status: 202,
+      })
+    },
+  )
 
   it("rejects a successful cancellation response with the wrong status code", async () => {
     const cancelUrl = `${apiUrl}/17/cancel`
@@ -529,9 +607,7 @@ describe("Scrape Run frontend fetchers", () => {
   it("rejects a nonconforming successful response", async () => {
     server.use(
       http.get(apiUrl, () =>
-        HttpResponse.json([
-          { ...validScrapeRunSummary, status: "unknown" },
-        ]),
+        HttpResponse.json([{ ...validScrapeRunSummary, status: "unknown" }]),
       ),
     )
 

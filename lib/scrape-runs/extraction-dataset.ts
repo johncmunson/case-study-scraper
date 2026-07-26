@@ -9,9 +9,7 @@ export type ExtractionDatasetFormat =
   (typeof EXTRACTION_DATASET_FORMATS)[number]
 
 export type ExtractionDatasetAvailability =
-  | "available"
-  | "active-run"
-  | "no-successful-results"
+  "available" | "active-run" | "no-successful-results"
 
 export type ExtractionDatasetField = Readonly<{
   position: number
@@ -62,9 +60,7 @@ export function getExtractionDatasetAvailability(
     return "active-run"
   }
 
-  return successfulResultCount > 0
-    ? "available"
-    : "no-successful-results"
+  return successfulResultCount > 0 ? "available" : "no-successful-results"
 }
 
 export function getExtractionDatasetApiPath(

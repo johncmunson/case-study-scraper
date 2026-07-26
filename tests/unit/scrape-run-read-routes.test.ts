@@ -167,9 +167,7 @@ describe("scrape-run read routes", () => {
     {
       label: "run list",
       read: () =>
-        getScrapeRuns(
-          new Request("http://localhost/api/scrape-runs"),
-        ),
+        getScrapeRuns(new Request("http://localhost/api/scrape-runs")),
     },
     {
       label: "run detail",
@@ -183,9 +181,7 @@ describe("scrape-run read routes", () => {
       label: "job detail",
       read: () =>
         getScrapeJob(
-          new Request(
-            "http://localhost/api/scrape-runs/17/scrape-jobs/31",
-          ),
+          new Request("http://localhost/api/scrape-runs/17/scrape-jobs/31"),
           jobContext(),
         ),
     },
@@ -337,18 +333,21 @@ describe("scrape-run read routes", () => {
     ["17", "-1"],
     ["17", "31.5"],
     ["17", "9007199254740992"],
-  ])("returns the private 404 for invalid nested IDs %s/%s", async (runId, jobId) => {
-    const response = await getScrapeJob(
-      new Request("http://localhost"),
-      jobContext(runId, jobId),
-    )
+  ])(
+    "returns the private 404 for invalid nested IDs %s/%s",
+    async (runId, jobId) => {
+      const response = await getScrapeJob(
+        new Request("http://localhost"),
+        jobContext(runId, jobId),
+      )
 
-    expect(response.status).toBe(404)
-    await expect(response.json()).resolves.toEqual({
-      error: "Scrape job not found.",
-    })
-    expect(findOwnedScrapeJobDetail).not.toHaveBeenCalled()
-  })
+      expect(response.status).toBe(404)
+      await expect(response.json()).resolves.toEqual({
+        error: "Scrape job not found.",
+      })
+      expect(findOwnedScrapeJobDetail).not.toHaveBeenCalled()
+    },
+  )
 
   it("returns 404 when the job is cross-user or belongs to a different run", async () => {
     vi.mocked(findOwnedScrapeJobDetail).mockResolvedValue(null)

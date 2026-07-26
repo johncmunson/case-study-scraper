@@ -42,10 +42,8 @@ export function ScrapeRunListItem({ run }: { run: ScrapeRunSummary }) {
   const hostname = getTargetSiteHostname(run.targetUrl)
   const statusLabel = getScrapeRunStatusLabel(run)
   const formattedCreatedAt = formatScrapeRunCreatedAt(run.createdAt)
-  const hasActiveJobProgress =
-    isActiveScrapeRun(run) && run.jobCounts.total > 0
-  const showSpinner =
-    run.status === "in_progress" || isCancellingScrapeRun(run)
+  const hasActiveJobProgress = isActiveScrapeRun(run) && run.jobCounts.total > 0
+  const showSpinner = run.status === "in_progress" || isCancellingScrapeRun(run)
 
   return (
     <div role="listitem" className="min-w-0 overflow-hidden rounded-lg">

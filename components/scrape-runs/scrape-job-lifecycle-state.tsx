@@ -27,10 +27,7 @@ const LIFECYCLE_CONTENT = {
     icon: CircleXIcon,
   },
 } as const satisfies Record<
-  Extract<
-    ScrapeJobDetail["status"],
-    "pending" | "in_progress" | "cancelled"
-  >,
+  Extract<ScrapeJobDetail["status"], "pending" | "in_progress" | "cancelled">,
   {
     title: string
     description: string

@@ -74,12 +74,12 @@ export function ScrapeRunCardActions({ run }: { run: ScrapeRunSummary }) {
       cancellationPath,
       cancelScrapeRun,
     )
-  const { trigger: triggerDeletion, isMutating: isDeleting } =
-    useSWRMutation<void, ScrapeRunApiError>(deletionPath, deleteScrapeRun)
+  const { trigger: triggerDeletion, isMutating: isDeleting } = useSWRMutation<
+    void,
+    ScrapeRunApiError
+  >(deletionPath, deleteScrapeRun)
   const isMutating = isCancelling || isDeleting
-  const selectedContent = selectedAction
-    ? ACTION_CONTENT[selectedAction]
-    : null
+  const selectedContent = selectedAction ? ACTION_CONTENT[selectedAction] : null
 
   async function confirmAction() {
     const action = selectedAction

@@ -293,7 +293,9 @@ describe("Extraction Dataset repository", () => {
     ],
     [{ client_name: "Acme", industry: 42 }, "field-value-invalid"],
     [{ client_name: null, industry: null }, "required-field-missing"],
-  ] satisfies ReadonlyArray<readonly [unknown, ExtractionDatasetInvalidReason]>)(
+  ] satisfies ReadonlyArray<
+    readonly [unknown, ExtractionDatasetInvalidReason]
+  >)(
     "passes corrupt successful JSONB to dataset validation without coercion: %s",
     async (storedResult, reason) => {
       const owner = await createUser(`Owner ${reason}`)

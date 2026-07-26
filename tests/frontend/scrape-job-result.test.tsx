@@ -131,7 +131,10 @@ describe("Scrape Job Extraction Result", () => {
       expect(
         within(item).queryByRole("button", { name: "Show raw text" }),
       ).not.toBeInTheDocument()
-      expect(item.querySelector("button")).toHaveAttribute("aria-hidden", "true")
+      expect(item.querySelector("button")).toHaveAttribute(
+        "aria-hidden",
+        "true",
+      )
     }
   })
 
@@ -281,9 +284,9 @@ describe("Scrape Job Extraction Result", () => {
         name: "Second story",
       }),
     ).toBeInTheDocument()
-    expect(within(firstDefinition as HTMLElement).getByText("important").tagName).toBe(
-      "STRONG",
-    )
+    expect(
+      within(firstDefinition as HTMLElement).getByText("important").tagName,
+    ).toBe("STRONG")
     expect(showFirstRawButton).toHaveClass("bg-secondary")
     expect(showFirstRawButton.querySelector("svg")).toHaveClass(
       "lucide-code-xml",
@@ -394,7 +397,9 @@ describe("Scrape Job Extraction Result", () => {
     expect(source).toHaveAttribute("rel", "noopener noreferrer")
 
     expect(screen.getByText("Unsafe image")).toBeInTheDocument()
-    expect(screen.queryByRole("link", { name: /javascript/i })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole("link", { name: /javascript/i }),
+    ).not.toBeInTheDocument()
     expect(container.querySelector('[data-live="yes"]')).not.toBeInTheDocument()
     expect(container.querySelector("script")).not.toBeInTheDocument()
     expect(screen.getByText(/<div data-live="yes">/)).toBeInTheDocument()
@@ -440,7 +445,8 @@ describe("Scrape Job Extraction Result", () => {
       />,
     )
 
-    const definition = fieldItem("Summary").term.nextElementSibling as HTMLElement
+    const definition = fieldItem("Summary").term
+      .nextElementSibling as HTMLElement
     expect(
       within(definition).getByRole("heading", {
         level: 4,
@@ -463,7 +469,9 @@ describe("Scrape Job Extraction Result", () => {
       ).toBeInTheDocument()
     }
 
-    const paragraph = within(definition).getByText(/Paragraph with/).closest("p")
+    const paragraph = within(definition)
+      .getByText(/Paragraph with/)
+      .closest("p")
     expect(paragraph).toHaveClass("wrap-anywhere")
     expect(paragraph?.querySelector("em")).toHaveTextContent("emphasis")
     expect(paragraph?.querySelector("code")).toHaveClass("wrap-anywhere")
@@ -484,7 +492,8 @@ describe("Scrape Job Extraction Result", () => {
 
   it("keeps long labels, descriptions, and candidate raw text readable and exact", async () => {
     const user = userEvent.setup()
-    const longLabel = "Industry Classification With A Very Long User Facing Name"
+    const longLabel =
+      "Industry Classification With A Very Long User Facing Name"
     const longDescription =
       "An intentionally long field description that remains readable on narrow layouts"
     const multilineValue = `${"First line with an intentionally long unbroken-value-for-responsive-layouts".padEnd(349, ".")}\r\nhttps://example.com/not-a-link`
@@ -516,7 +525,11 @@ describe("Scrape Job Extraction Result", () => {
     const value = screen.getByText(/First line with an intentionally long/)
     expect(value).toHaveTextContent(/First line.*not-a-link/)
     expect(value.textContent).toBe(multilineValue)
-    expect(value).toHaveClass("wrap-anywhere", "whitespace-pre-wrap", "select-text")
+    expect(value).toHaveClass(
+      "wrap-anywhere",
+      "whitespace-pre-wrap",
+      "select-text",
+    )
     expect(within(value).queryByRole("link")).not.toBeInTheDocument()
   })
 })

@@ -101,7 +101,8 @@ function NotFoundState({ runId }: { runId: string }) {
           <div className="space-y-2">
             <h2 className="text-xl font-semibold">Scrape Job not found</h2>
             <p className="text-muted-foreground">
-              This Scrape Job does not exist or is not available in this Scrape Run.
+              This Scrape Job does not exist or is not available in this Scrape
+              Run.
             </p>
           </div>
           <div className="flex flex-wrap justify-center gap-2">
@@ -153,7 +154,9 @@ function RefreshWarning({ onRetry }: { onRetry: () => void }) {
     <Alert>
       <CircleAlertIcon aria-hidden="true" />
       <AlertTitle>Couldn’t refresh scrape job</AlertTitle>
-      <AlertDescription>Showing the most recently loaded data.</AlertDescription>
+      <AlertDescription>
+        Showing the most recently loaded data.
+      </AlertDescription>
       <AlertAction>
         <RetryButton onRetry={onRetry} />
       </AlertAction>
@@ -174,10 +177,7 @@ export function ScrapeJobDetailView({
   const detailPath = getScrapeJobDetailApiPath(runId, jobId)
   const expectedRunId = Number(runId)
   const expectedJobId = Number(jobId)
-  const { data, error, mutate } = useSWR<
-    ScrapeJobDetail,
-    ScrapeRunApiError
-  >(
+  const { data, error, mutate } = useSWR<ScrapeJobDetail, ScrapeRunApiError>(
     detailPath,
     (url) => fetchScrapeJobDetail(url, expectedRunId, expectedJobId),
     {
@@ -207,9 +207,8 @@ export function ScrapeJobDetailView({
 
         const retryExponent = Math.min(revalidateOptions.retryCount, 8)
         const retryDelay =
-          Math.trunc(
-            (Math.random() + 0.5) * (1 << retryExponent),
-          ) * configuration.errorRetryInterval
+          Math.trunc((Math.random() + 0.5) * (1 << retryExponent)) *
+          configuration.errorRetryInterval
 
         setTimeout(() => {
           if (cache.get(key)?.error === detailError) {

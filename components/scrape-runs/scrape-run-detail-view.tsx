@@ -129,11 +129,7 @@ type CancellationNotice = Readonly<{
   visibility: "always" | "while-active"
 }>
 
-function CancellationWarning({
-  notice,
-}: {
-  notice: CancellationNotice
-}) {
+function CancellationWarning({ notice }: { notice: CancellationNotice }) {
   return (
     <Alert>
       <CircleAlertIcon aria-hidden="true" />
@@ -148,7 +144,9 @@ function RefreshWarning({ onRetry }: { onRetry: () => void }) {
     <Alert>
       <CircleAlertIcon aria-hidden="true" />
       <AlertTitle>Couldn’t refresh scrape run</AlertTitle>
-      <AlertDescription>Showing the most recently loaded data.</AlertDescription>
+      <AlertDescription>
+        Showing the most recently loaded data.
+      </AlertDescription>
       <AlertAction>
         <RetryButton onRetry={onRetry} />
       </AlertAction>
@@ -166,22 +164,23 @@ export function ScrapeRunDetailView({ runId }: { runId: string }) {
     useState(false)
   const readModelRefreshGeneration = useRef(0)
   const detailPath = getScrapeRunDetailApiPath(runId)
-  const { data, error, mutate } = useSWR<
-    ScrapeRunDetail,
-    ScrapeRunApiError
-  >(detailPath, fetchScrapeRunDetail, {
-    errorRetryCount: GET_ERROR_RETRY_COUNT,
-    refreshInterval: (latestDetail) =>
-      latestDetail && isActiveScrapeRun(latestDetail)
-        ? ACTIVE_RUN_REFRESH_INTERVAL
-        : 0,
-    revalidateOnFocus: true,
-    revalidateOnReconnect: true,
-    shouldRetryOnError: shouldRetryDetailRequest,
-    onSuccess: () => {
-      setDetailRefreshFailed(false)
+  const { data, error, mutate } = useSWR<ScrapeRunDetail, ScrapeRunApiError>(
+    detailPath,
+    fetchScrapeRunDetail,
+    {
+      errorRetryCount: GET_ERROR_RETRY_COUNT,
+      refreshInterval: (latestDetail) =>
+        latestDetail && isActiveScrapeRun(latestDetail)
+          ? ACTIVE_RUN_REFRESH_INTERVAL
+          : 0,
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+      shouldRetryOnError: shouldRetryDetailRequest,
+      onSuccess: () => {
+        setDetailRefreshFailed(false)
+      },
     },
-  })
+  )
   const cancellationPath = getScrapeRunCancellationApiPath(runId)
   const { trigger: cancelRun, isMutating: isCancelling } = useSWRMutation<
     CancelScrapeRunResponse,

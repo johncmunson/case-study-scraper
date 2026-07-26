@@ -273,14 +273,14 @@ Long names and hostnames should truncate without breaking the responsive layout.
 
 A `cancellationRequestedAt` value overrides the visible label of an otherwise active run:
 
-| Condition | Visible label | Badge treatment |
-|---|---|---|
-| `pending` | Pending | secondary |
-| `in_progress` | In progress | default |
-| Active with Cancellation Request | Cancelling | outline |
-| `complete` | Complete | secondary |
-| `failed` | Failed | destructive |
-| `cancelled` | Cancelled | outline |
+| Condition                        | Visible label | Badge treatment |
+| -------------------------------- | ------------- | --------------- |
+| `pending`                        | Pending       | secondary       |
+| `in_progress`                    | In progress   | default         |
+| Active with Cancellation Request | Cancelling    | outline         |
+| `complete`                       | Complete      | secondary       |
+| `failed`                         | Failed        | destructive     |
+| `cancelled`                      | Cancelled     | outline         |
 
 Show a small spinner only for **In progress** and **Cancelling**. The text label must remain present so status is never communicated by color or motion alone. Decorative spinner elements should be hidden from assistive technology.
 
@@ -304,7 +304,7 @@ This distinction is required because Mapping and Filtering occur before jobs exi
 For an active run with jobs, show a thin shadcn `Progress` bar:
 
 ```ts
-(finishedCount / jobCounts.total) * 100
+;(finishedCount / jobCounts.total) * 100
 ```
 
 The progress bar needs an accessible label and value. Do not show a determinate bar during Run Preparation or after a run becomes terminal.

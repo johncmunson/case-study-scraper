@@ -86,9 +86,7 @@ export class MissingRequiredFieldsError extends FatalError {
 
   constructor(missingRequiredFieldKeys: readonly string[]) {
     super("Required extraction fields were missing.")
-    this.missingRequiredFieldKeys = Object.freeze([
-      ...missingRequiredFieldKeys,
-    ])
+    this.missingRequiredFieldKeys = Object.freeze([...missingRequiredFieldKeys])
   }
 }
 
@@ -152,7 +150,10 @@ export async function scrapePageForExtraction({
     }
 
     const parsedPageUrl = new URL(pageUrl)
-    if (parsedPageUrl.protocol !== "http:" && parsedPageUrl.protocol !== "https:") {
+    if (
+      parsedPageUrl.protocol !== "http:" &&
+      parsedPageUrl.protocol !== "https:"
+    ) {
       throw new TypeError("A valid HTTP(S) page URL is required.")
     }
 

@@ -72,10 +72,7 @@ describe("provider failure classification", () => {
 
   it("classifies malformed provider output as retryable", () => {
     expect(
-      toProviderWorkflowError(
-        "filtering",
-        new MalformedProviderOutputError(),
-      ),
+      toProviderWorkflowError("filtering", new MalformedProviderOutputError()),
     ).toMatchObject({
       constructor: RetryableError,
       message: "Filtering provider returned malformed output.",

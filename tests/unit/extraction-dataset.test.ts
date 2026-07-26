@@ -36,9 +36,7 @@ describe("Extraction Dataset contracts", () => {
     ["complete", 1, "available"],
     ["failed", 1, "available"],
     ["cancelled", 1, "available"],
-  ] satisfies ReadonlyArray<
-    readonly [ScrapeRunStatus, number, string]
-  >)(
+  ] satisfies ReadonlyArray<readonly [ScrapeRunStatus, number, string]>)(
     "classifies a %s Run with %i successful Jobs as %s",
     (status, successfulResultCount, expected) => {
       expect(
@@ -122,20 +120,23 @@ describe("Extraction Dataset contracts", () => {
     ],
     [{ client: "Acme", industry: 42 }, "field-value-invalid"],
     [{ client: null, industry: "Software" }, "required-field-missing"],
-  ] as const)("rejects an inconsistent stored result: %s", (storedResult, reason) => {
-    expect(
-      buildExtractionDataset({
-        status: "complete",
-        fields,
-        successfulJobs: [
-          {
-            canonicalPageUrl: "https://example.com/customers/acme",
-            result: storedResult,
-          },
-        ],
-      }),
-    ).toEqual({ status: "invalid", reason })
-  })
+  ] as const)(
+    "rejects an inconsistent stored result: %s",
+    (storedResult, reason) => {
+      expect(
+        buildExtractionDataset({
+          status: "complete",
+          fields,
+          successfulJobs: [
+            {
+              canonicalPageUrl: "https://example.com/customers/acme",
+              result: storedResult,
+            },
+          ],
+        }),
+      ).toEqual({ status: "invalid", reason })
+    },
+  )
 
   it("creates explicit format API paths", () => {
     expect(getExtractionDatasetApiPath(42, "csv")).toBe(

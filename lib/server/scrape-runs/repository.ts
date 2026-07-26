@@ -266,9 +266,7 @@ export async function deleteOwnedTerminalScrapeRun({
     const [run] = await transaction
       .select({ id: scrapeRuns.id, status: scrapeRuns.status })
       .from(scrapeRuns)
-      .where(
-        and(eq(scrapeRuns.id, scrapeRunId), eq(scrapeRuns.userId, userId)),
-      )
+      .where(and(eq(scrapeRuns.id, scrapeRunId), eq(scrapeRuns.userId, userId)))
       .for("update")
 
     if (!run) {
@@ -301,9 +299,7 @@ export async function deleteOwnedTerminalScrapeJob({
     const [run] = await transaction
       .select({ id: scrapeRuns.id, status: scrapeRuns.status })
       .from(scrapeRuns)
-      .where(
-        and(eq(scrapeRuns.id, scrapeRunId), eq(scrapeRuns.userId, userId)),
-      )
+      .where(and(eq(scrapeRuns.id, scrapeRunId), eq(scrapeRuns.userId, userId)))
       .for("update")
 
     if (!run) {

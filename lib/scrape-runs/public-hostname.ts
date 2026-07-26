@@ -32,9 +32,7 @@ function isIpAddress(hostname: string) {
     parts.length === 4 &&
     parts.every(
       (part) =>
-        /^\d{1,3}$/.test(part) &&
-        Number(part) >= 0 &&
-        Number(part) <= 255,
+        /^\d{1,3}$/.test(part) && Number(part) >= 0 && Number(part) <= 255,
     )
   )
 }

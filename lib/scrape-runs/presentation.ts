@@ -52,9 +52,7 @@ export function getScrapeRunStageLabel(stage: ScrapeRunStage) {
   return STAGE_LABELS[stage]
 }
 
-export function getScrapeRunStageStatusLabel(
-  status: ScrapeRunStageStatus,
-) {
+export function getScrapeRunStageStatusLabel(status: ScrapeRunStageStatus) {
   return STAGE_STATUS_LABELS[status]
 }
 
@@ -71,9 +69,7 @@ export function getScrapeJobHeading(job: ScrapeJobDetail) {
     return "Scrape Job"
   }
 
-  const primaryIdentifier = job.fields.find(
-    (field) => field.primaryIdentifier,
-  )
+  const primaryIdentifier = job.fields.find((field) => field.primaryIdentifier)
 
   return primaryIdentifier
     ? (job.result[primaryIdentifier.key] ?? "Scrape Job")
@@ -119,9 +115,7 @@ export function getScrapeRunJobSummary(run: ScrapeRunSummary) {
   return outcomes.join(" · ")
 }
 
-export function getPrimaryIdentifierField(
-  fields: readonly ScrapeRunField[],
-) {
+export function getPrimaryIdentifierField(fields: readonly ScrapeRunField[]) {
   return fields.find((field) => field.primaryIdentifier)
 }
 
@@ -151,14 +145,8 @@ export function getScrapeJobStatusCounts(jobs: readonly ScrapeJobSummary[]) {
   return counts
 }
 
-export function clampScrapeJobPage(
-  requestedPage: number,
-  totalJobs: number,
-) {
-  const totalPages = Math.max(
-    1,
-    Math.ceil(totalJobs / SCRAPE_JOB_PAGE_SIZE),
-  )
+export function clampScrapeJobPage(requestedPage: number, totalJobs: number) {
+  const totalPages = Math.max(1, Math.ceil(totalJobs / SCRAPE_JOB_PAGE_SIZE))
   const integerPage = Number.isFinite(requestedPage)
     ? Math.trunc(requestedPage)
     : 1

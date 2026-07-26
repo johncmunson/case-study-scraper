@@ -57,14 +57,17 @@ const normalizedTargetUrlSchema = z
     )
   }, "Must be a normalized HTTP or HTTPS target origin URL.")
 
-const httpUrlSchema = z.string().url().refine((value) => {
-  try {
-    const url = new URL(value)
-    return url.protocol === "http:" || url.protocol === "https:"
-  } catch {
-    return false
-  }
-}, "Must be a valid HTTP or HTTPS URL.")
+const httpUrlSchema = z
+  .string()
+  .url()
+  .refine((value) => {
+    try {
+      const url = new URL(value)
+      return url.protocol === "http:" || url.protocol === "https:"
+    } catch {
+      return false
+    }
+  }, "Must be a valid HTTP or HTTPS URL.")
 const isoDateTimeSchema = z.iso.datetime({ offset: true })
 const nullableIsoDateTimeSchema = isoDateTimeSchema.nullable()
 const positiveIntegerSchema = z.number().int().positive()
@@ -164,9 +167,7 @@ const orderedScrapeJobSummariesSchema = z
   .array(scrapeJobSummarySchema)
   .refine(
     (jobs) =>
-      jobs.every(
-        (job, index) => index === 0 || jobs[index - 1].id < job.id,
-      ),
+      jobs.every((job, index) => index === 0 || jobs[index - 1].id < job.id),
     { message: "Scrape Jobs must be ordered by unique IDs." },
   )
 
@@ -175,9 +176,7 @@ const canonicalRunStagesSchema = z
   .length(SCRAPE_RUN_STAGES.length)
   .refine(
     (stages) =>
-      stages.every(
-        (stage, index) => stage.stage === SCRAPE_RUN_STAGES[index],
-      ),
+      stages.every((stage, index) => stage.stage === SCRAPE_RUN_STAGES[index]),
     { message: "Run Stages must be unique and in canonical order." },
   )
 
@@ -304,7 +303,8 @@ export const scrapeJobDetailSchema = z
         ) {
           context.addIssue({
             code: "custom",
-            message: "The Extraction Result must contain exactly the configured Field Keys.",
+            message:
+              "The Extraction Result must contain exactly the configured Field Keys.",
             path: ["result"],
           })
         }
@@ -331,7 +331,8 @@ export const scrapeJobDetailSchema = z
       if (!fieldsByKey.get(key)?.required) {
         context.addIssue({
           code: "custom",
-          message: "Missing Field Keys must identify configured Required Extraction Fields.",
+          message:
+            "Missing Field Keys must identify configured Required Extraction Fields.",
           path: ["missingRequiredFieldKeys", index],
         })
       }
@@ -362,9 +363,7 @@ export type ScrapeJobDetail = z.infer<typeof scrapeJobDetailSchema>
 export type CancelScrapeRunResponse = z.infer<
   typeof cancelScrapeRunResponseSchema
 >
-export type ScrapeRunSummaryList = z.infer<
-  typeof scrapeRunSummaryListSchema
->
+export type ScrapeRunSummaryList = z.infer<typeof scrapeRunSummaryListSchema>
 export type ScrapeRunApiErrorResponse = z.infer<
   typeof scrapeRunApiErrorResponseSchema
 >
@@ -505,10 +504,7 @@ export async function fetchScrapeJobDetail(
 
   const detail = await validatedResponse(response, scrapeJobDetailSchema)
 
-  if (
-    detail.scrapeRun.id !== expectedRunId ||
-    detail.id !== expectedJobId
-  ) {
+  if (detail.scrapeRun.id !== expectedRunId || detail.id !== expectedJobId) {
     throw invalidResponseError(response)
   }
 

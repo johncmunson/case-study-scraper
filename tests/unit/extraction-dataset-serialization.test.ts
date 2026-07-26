@@ -144,7 +144,9 @@ describe("Extraction Dataset serialization", () => {
     const originalError = new Error("sensitive extracted value")
     vi.mocked(writeToString).mockRejectedValueOnce(originalError)
 
-    await expect(serializeExtractionDatasetCsv(fields, records)).rejects.toEqual(
+    await expect(
+      serializeExtractionDatasetCsv(fields, records),
+    ).rejects.toEqual(
       expect.objectContaining({
         name: "ExtractionDatasetSerializationError",
         format: "csv",

@@ -71,7 +71,10 @@ describe("scrape-run repository", () => {
         userId: user.id,
         configuration: runConfiguration(),
       })
-      await db.update(scrapeRuns).set({ status }).where(eq(scrapeRuns.id, run.id))
+      await db
+        .update(scrapeRuns)
+        .set({ status })
+        .where(eq(scrapeRuns.id, run.id))
       const [job] = await db
         .insert(scrapeJobs)
         .values({ scrapeRunId: run.id, url: `https://example.com/${status}` })
@@ -100,7 +103,13 @@ describe("scrape-run repository", () => {
     },
   )
 
-  it.each(["pending", "in_progress", "complete", "failed", "cancelled"] as const)(
+  it.each([
+    "pending",
+    "in_progress",
+    "complete",
+    "failed",
+    "cancelled",
+  ] as const)(
     "deletes a %s Job from a terminal Run and preserves sibling Jobs",
     async (jobStatus) => {
       const user = await createUser()
@@ -108,7 +117,10 @@ describe("scrape-run repository", () => {
         userId: user.id,
         configuration: runConfiguration(),
       })
-      await db.update(scrapeRuns).set({ status: "complete" }).where(eq(scrapeRuns.id, run.id))
+      await db
+        .update(scrapeRuns)
+        .set({ status: "complete" })
+        .where(eq(scrapeRuns.id, run.id))
       const [job, sibling] = await db
         .insert(scrapeJobs)
         .values([
@@ -138,27 +150,76 @@ describe("scrape-run repository", () => {
   it("privately rejects non-owned, missing, and wrong-parent Jobs", async () => {
     const owner = await createUser("Owner")
     const other = await createUser("Other")
-    const run = await createScrapeRun({ userId: owner.id, configuration: runConfiguration() })
-    const otherRun = await createScrapeRun({ userId: other.id, configuration: runConfiguration() })
+    const run = await createScrapeRun({
+      userId: owner.id,
+      configuration: runConfiguration(),
+    })
+    const otherRun = await createScrapeRun({
+      userId: other.id,
+      configuration: runConfiguration(),
+    })
     await db.update(scrapeRuns).set({ status: "complete" })
-    const [job] = await db.insert(scrapeJobs).values({ scrapeRunId: run.id, url: "https://example.com/private" }).returning()
+    const [job] = await db
+      .insert(scrapeJobs)
+      .values({ scrapeRunId: run.id, url: "https://example.com/private" })
+      .returning()
 
-    await expect(deleteOwnedTerminalScrapeJob({ userId: other.id, scrapeRunId: run.id, scrapeJobId: job.id })).resolves.toEqual({ outcome: "not_found" })
-    await expect(deleteOwnedTerminalScrapeJob({ userId: owner.id, scrapeRunId: otherRun.id, scrapeJobId: job.id })).resolves.toEqual({ outcome: "not_found" })
-    await expect(deleteOwnedTerminalScrapeJob({ userId: owner.id, scrapeRunId: run.id, scrapeJobId: 999_999 })).resolves.toEqual({ outcome: "not_found" })
-    await expect(db.query.scrapeJobs.findFirst({ where: eq(scrapeJobs.id, job.id) })).resolves.toMatchObject({ id: job.id })
+    await expect(
+      deleteOwnedTerminalScrapeJob({
+        userId: other.id,
+        scrapeRunId: run.id,
+        scrapeJobId: job.id,
+      }),
+    ).resolves.toEqual({ outcome: "not_found" })
+    await expect(
+      deleteOwnedTerminalScrapeJob({
+        userId: owner.id,
+        scrapeRunId: otherRun.id,
+        scrapeJobId: job.id,
+      }),
+    ).resolves.toEqual({ outcome: "not_found" })
+    await expect(
+      deleteOwnedTerminalScrapeJob({
+        userId: owner.id,
+        scrapeRunId: run.id,
+        scrapeJobId: 999_999,
+      }),
+    ).resolves.toEqual({ outcome: "not_found" })
+    await expect(
+      db.query.scrapeJobs.findFirst({ where: eq(scrapeJobs.id, job.id) }),
+    ).resolves.toMatchObject({ id: job.id })
   })
 
   it.each(["pending", "in_progress"] as const)(
     "rejects deleting an existing Job from an active %s Run",
     async (status) => {
       const user = await createUser()
-      const run = await createScrapeRun({ userId: user.id, configuration: runConfiguration() })
-      await db.update(scrapeRuns).set({ status }).where(eq(scrapeRuns.id, run.id))
-      const [job] = await db.insert(scrapeJobs).values({ scrapeRunId: run.id, url: `https://example.com/active-${status}` }).returning()
+      const run = await createScrapeRun({
+        userId: user.id,
+        configuration: runConfiguration(),
+      })
+      await db
+        .update(scrapeRuns)
+        .set({ status })
+        .where(eq(scrapeRuns.id, run.id))
+      const [job] = await db
+        .insert(scrapeJobs)
+        .values({
+          scrapeRunId: run.id,
+          url: `https://example.com/active-${status}`,
+        })
+        .returning()
 
-      await expect(deleteOwnedTerminalScrapeJob({ userId: user.id, scrapeRunId: run.id, scrapeJobId: job.id })).resolves.toEqual({ outcome: "active_conflict" })
-      await expect(db.query.scrapeJobs.findFirst({ where: eq(scrapeJobs.id, job.id) })).resolves.toMatchObject({ id: job.id })
+      await expect(
+        deleteOwnedTerminalScrapeJob({
+          userId: user.id,
+          scrapeRunId: run.id,
+          scrapeJobId: job.id,
+        }),
+      ).resolves.toEqual({ outcome: "active_conflict" })
+      await expect(
+        db.query.scrapeJobs.findFirst({ where: eq(scrapeJobs.id, job.id) }),
+      ).resolves.toMatchObject({ id: job.id })
     },
   )
 

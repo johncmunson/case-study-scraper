@@ -7,9 +7,7 @@ import { server } from "@/tests/mocks/server"
 
 const targetUrl = "https://example.com/"
 
-function mapHandler(
-  resolver: Parameters<typeof http.post>[1],
-) {
+function mapHandler(resolver: Parameters<typeof http.post>[1]) {
   return http.post("https://api.firecrawl.dev/v2/map", resolver)
 }
 
@@ -75,7 +73,10 @@ describe("Firecrawl Map adapter", () => {
     server.use(
       mapHandler(() => {
         requests()
-        return HttpResponse.json({ success: false, error: "upstream" }, { status: 503 })
+        return HttpResponse.json(
+          { success: false, error: "upstream" },
+          { status: 503 },
+        )
       }),
     )
 

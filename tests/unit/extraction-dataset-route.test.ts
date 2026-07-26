@@ -54,9 +54,7 @@ function runContext(runId = "17") {
 }
 
 function request(format?: string) {
-  const url = new URL(
-    "http://localhost/api/scrape-runs/17/extraction-dataset",
-  )
+  const url = new URL("http://localhost/api/scrape-runs/17/extraction-dataset")
 
   if (format !== undefined) {
     url.searchParams.set("format", format)
@@ -88,7 +86,7 @@ describe("Extraction Dataset route", () => {
     expect(findOwnedScrapeRunExtractionDatasetSource).not.toHaveBeenCalled()
   })
 
-  it.each([undefined, "", "xml", "CSV"]) (
+  it.each([undefined, "", "xml", "CSV"])(
     "returns 400 for unsupported format %j without reading the Run",
     async (format) => {
       const response = await getExtractionDataset(request(format), runContext())
@@ -106,7 +104,10 @@ describe("Extraction Dataset route", () => {
   it.each(["not-a-run", "0", "-1", "17.5", "9007199254740992"])(
     "returns the private 404 for invalid Run ID %s",
     async (runId) => {
-      const response = await getExtractionDataset(request("csv"), runContext(runId))
+      const response = await getExtractionDataset(
+        request("csv"),
+        runContext(runId),
+      )
 
       expect(response.status).toBe(404)
       await expect(response.json()).resolves.toEqual({
@@ -224,9 +225,7 @@ describe("Extraction Dataset route", () => {
     const response = await getExtractionDataset(request("csv"), runContext())
 
     expect(response.status).toBe(200)
-    expect(response.headers.get("Content-Type")).toBe(
-      "text/csv; charset=utf-8",
-    )
+    expect(response.headers.get("Content-Type")).toBe("text/csv; charset=utf-8")
     expect(response.headers.get("Content-Disposition")).toBe(
       'attachment; filename="cafe-customer-stories-17.csv"',
     )

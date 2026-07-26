@@ -153,7 +153,9 @@ export function DownloadExtractionDataset({
         >
           <DownloadButton disabled />
         </TooltipTrigger>
-        <TooltipContent>{UNAVAILABLE_EXPLANATIONS[availability]}</TooltipContent>
+        <TooltipContent>
+          {UNAVAILABLE_EXPLANATIONS[availability]}
+        </TooltipContent>
       </Tooltip>
     )
   }

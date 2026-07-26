@@ -401,7 +401,9 @@ describe("scrape-run schema", () => {
         .select()
         .from(scrapeJobs)
         .where(eq(scrapeJobs.scrapeRunId, unrelatedRun.id)),
-    ).resolves.toMatchObject([{ result: { client: `Client ${unrelatedRun.id}` } }])
+    ).resolves.toMatchObject([
+      { result: { client: `Client ${unrelatedRun.id}` } },
+    ])
   })
 
   it("cascades user deletion through runs, fields, stages, jobs, and results", async () => {

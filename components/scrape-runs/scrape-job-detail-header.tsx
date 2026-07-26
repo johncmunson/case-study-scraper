@@ -11,12 +11,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Spinner } from "@/components/ui/spinner"
 import type { ScrapeJobDetail } from "@/lib/scrape-runs/api-contracts"
 import {
@@ -129,21 +124,22 @@ export function ScrapeJobDetailHeader({
         <CardHeader>
           <CardTitle>
             <h3>Page URL</h3>
-                      <a
-            className="inline-flex max-w-full items-center gap-1 wrap-anywhere select-text text-sm text-muted-foreground underline underline-offset-4 hover:text-primary hover:decoration-primary focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-            href={job.url}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <span>{job.url}</span>
-            <ExternalLinkIcon aria-hidden="true" className="size-3.5 shrink-0" />
-            <span className="sr-only"> (opens in a new tab)</span>
-          </a>
+            <a
+              className="inline-flex max-w-full items-center gap-1 wrap-anywhere select-text text-sm text-muted-foreground underline underline-offset-4 hover:text-primary hover:decoration-primary focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+              href={job.url}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span>{job.url}</span>
+              <ExternalLinkIcon
+                aria-hidden="true"
+                className="size-3.5 shrink-0"
+              />
+              <span className="sr-only"> (opens in a new tab)</span>
+            </a>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-
-
           <dl className="grid grid-cols-[max-content_minmax(0,1fr)] gap-x-3 gap-y-1 text-sm text-muted-foreground sm:grid-cols-[repeat(2,max-content_minmax(0,1fr))] sm:gap-x-4">
             <dt className="font-medium text-foreground">Attempts</dt>
             <dd>{job.attemptCount}</dd>

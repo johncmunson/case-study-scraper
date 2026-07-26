@@ -71,8 +71,7 @@ export function ScrapeRunDetailHeader({
 }) {
   const hostname = getTargetSiteHostname(run.targetUrl)
   const statusLabel = getScrapeRunStatusLabel(run)
-  const showSpinner =
-    run.status === "in_progress" || isCancellingScrapeRun(run)
+  const showSpinner = run.status === "in_progress" || isCancellingScrapeRun(run)
 
   return (
     <section className="space-y-5" aria-labelledby="scrape-run-name">
@@ -105,7 +104,10 @@ export function ScrapeRunDetailHeader({
             rel="noopener noreferrer"
           >
             <span className="truncate">{hostname}</span>
-            <ExternalLinkIcon aria-hidden="true" className="size-3.5 shrink-0" />
+            <ExternalLinkIcon
+              aria-hidden="true"
+              className="size-3.5 shrink-0"
+            />
             <span className="sr-only"> (opens in a new tab)</span>
           </a>
         </div>

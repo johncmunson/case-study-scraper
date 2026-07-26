@@ -12,14 +12,17 @@ describe("URL filtering deployment configuration", () => {
   it.each([
     { AI_GATEWAY_API_KEY: "gateway-key" },
     { VERCEL_OIDC_TOKEN: "oidc-token" },
-  ])("returns the trimmed persisted model with supported Gateway auth", (auth) => {
-    expect(
-      validateUrlFilterConfiguration({
-        ...auth,
-        URL_FILTER_MODEL: "  anthropic/claude-sonnet-4.5  ",
-      }),
-    ).toBe("anthropic/claude-sonnet-4.5")
-  })
+  ])(
+    "returns the trimmed persisted model with supported Gateway auth",
+    (auth) => {
+      expect(
+        validateUrlFilterConfiguration({
+          ...auth,
+          URL_FILTER_MODEL: "  anthropic/claude-sonnet-4.5  ",
+        }),
+      ).toBe("anthropic/claude-sonnet-4.5")
+    },
+  )
 
   it("rejects missing Gateway authentication as unavailable configuration", () => {
     let thrown: unknown
